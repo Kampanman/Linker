@@ -65,7 +65,7 @@
           </div><br />
           <div>
             <v-app>
-              <v-textarea outlined label="ノート本文" v-model="selectItem.note"></v-textarea>
+              <v-textarea outlined label="ノート本文" v-model="selectItem.note" placeholder="本文を入力してください（最大字数：空白・改行含め半角44,000文字）"></v-textarea>
             </v-app>
           </div>
           <div class="changeFlex" :style="styles.replaceArea">
@@ -82,6 +82,7 @@
             <li :style="styles.ctred" v-if="v_flg.isEmpty.note==true" @click="v_flg.isEmpty.note=false" v-text="client.phrase.validation.noteEmpty"></li>
             <li :style="styles.ctred" v-if="v_flg.length.title==true" @click="v_flg.length.title=false" v-text="client.phrase.validation.overTitle"></li>
             <li :style="styles.ctred" v-if="v_flg.isNotUrl==true" @click="v_flg.isNotUrl=false" v-text="client.phrase.validation.urlInvalid"></li>
+            <li :style="styles.ctred" v-if="noteOverLength==true" @click="noteOverLength=false">本文の文字数が上限を超えています</li>
           </ul>
         </p>
         <section align="center">
@@ -146,6 +147,7 @@
       },
       client: this.cl,
       v_flg: this.cl.validationflg,
+      noteOverLength: false,
       pubStrs: ["公開","講師にのみ公開","非公開"],
       selectItem:{
         id: "",
@@ -330,6 +332,10 @@
         this.v_flg.isEmpty.note = true;
         decision = true;
       };
+      if(this.charCount(this.selectItem.note) > 44000){
+        this.noteOverLength = true;
+        decision = true;        
+      }
       if(this.selectItem.url!=""){
         const pattern = /^https?:\/\/[\w/:%#\$&\?\(\)~\.=\+\-]+$/;
         let result = pattern.test(this.selectItem.url);
@@ -340,6 +346,14 @@
       };
 
       return decision;
+    },
+    charCount (str) {
+      let len = 0;
+      for (let i = 0; i < str.length; i++) {
+        (str[i].match(/[ -~]/)) ? len += 1 : len += 2;
+      }
+
+      return len;
     },
     doInsert() {
       let data = {
@@ -392,6 +406,7 @@
       let publicity = 1;
       if(pub_str=="非公開") publicity = 0;
       if(pub_str=="講師にのみ公開") publicity = 2;
+
       return publicity;
     },
     doDelete() {
