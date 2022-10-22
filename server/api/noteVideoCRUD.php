@@ -77,7 +77,7 @@ try{
       // 動画レコードを更新
       $videoUpdateSql = "UPDATE linker_videos SET "
       ."title = :title, url = :url, publicity = :publicity, "
-      ."updated_at = now(), updated_user_id = :updated_user_id"
+      ."updated_at = now(), updated_user_id = :updated_user_id "
       ."WHERE id = ".$id;
       $statement = $connection->prepare($videoUpdateSql);
       $statement->bindValue(':title', $title);
