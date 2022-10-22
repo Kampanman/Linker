@@ -194,6 +194,7 @@
                     <v-btn :style="client.palette.pinkFront" @click="showSearchLog">検索ワードログを表示</v-btn>
                   </div><br />
                   <p v-if="doneLogInsert" style="color:red;cursor:pointer;" align="center" @click="doneLogInsert = false">検索ワードログを登録しました</p>
+                  <p v-if="failInsert" style="color:red;cursor:pointer;" align="center" @click="failInsert = false">ログが上限に達しています。過去の不要なログを削除してください</p>
                 </div>
               </template>
             </card-sec>
@@ -319,6 +320,7 @@
             viewOnlyOwn: 0,
             logInsert: 0,
             doneLogInsert: false,
+            failInsert: false,
             viewCountNull: false,
             createdDoubleSet: false,
             palette: colorPalette,
@@ -592,18 +594,16 @@
                 user_id: this.client.form.auth.accountID,
                 word: `${this.getStringFromDate(today)} | You searched ${this.client.form.search.gawty.trim()}.\n`,
               };
-
               // axiosでPHPのAPIにパラメータを送信する場合は、次のようにする
               let params = new URLSearchParams();
               Object.keys(data).forEach(function (key) {
                 params.append(key, this[key]);
               }, data);
-
               // ajax通信実行
               axios
                 .post('../../server/api/insertSearchLog.php', params, this.headerObject)
                 .then(response => {
-                  this.doneLogInsert = true;
+                  (response.data=="OVER") ? this.failInsert = true : this.doneLogInsert = true;
                 }).catch(error => alert("通信に失敗しました。"));
             } 
           },

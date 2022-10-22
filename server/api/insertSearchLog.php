@@ -46,14 +46,24 @@ try{
     $res = json_encode($result);
 
   }else{
-    // 検索結果ログレコードに検索結果を追加して更新
-    $logUpdateSql = "UPDATE linker_notes SET note = concat(note, :note), updated_at = now() "
+    $checkBiteSql = "SELECT LENGTH(note) bite FROM `linker_notes` "
       ."WHERE title LIKE '%検索ワードログ%' AND created_user_id = ".$user_id;
-    $statement = $connection->prepare($logUpdateSql);
-    $statement->bindValue(':note', $word);
-    
-    $result = $statement->execute();
-    $res = json_encode($result);
+    $checkStatement = $connection->prepare($checkBiteSql);
+    $checkStatement->execute();
+    $checkResult = $checkStatement->fetch(PDO::FETCH_ASSOC);
+
+    if($checkResult['bite'] > 65000){
+      $res = "OVER";
+    }else{
+      // 検索結果ログレコードに検索結果を追加して更新
+      $logUpdateSql = "UPDATE linker_notes SET note = concat(note, :note), updated_at = now() "
+        ."WHERE title LIKE '%検索ワードログ%' AND created_user_id = ".$user_id;
+      $statement = $connection->prepare($logUpdateSql);
+      $statement->bindValue(':note', $word);
+      
+      $result = $statement->execute();
+      $res = json_encode($result);
+    }
   }
 
   header("Content-type: application/json; charset=UTF-8");
