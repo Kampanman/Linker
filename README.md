@@ -42,6 +42,10 @@ https://secure.sakura.ad.jp/rs/cp/
 # 最近の更新｜Recent updates
 - 基本機能搭載完了：2022/10/14 (日本の鉄道開業150周年記念日)
 - バージョン1.0（β版）GitHub公開開始：2022/10/20
+- バージョン2.0（β版）GitHub公開開始：2022/11/03
+-- linker_videosテーブルに「tags」カラムを追加
+-- linker_videosテーブルの「title」の文字数上限を上方修正
+-- 講師権限保有者が他ユーザーの登録情報を修正する場合、アカウント名・アカウントIDの編集如何を選択できる機能を追加
 
 # 環境と使用言語｜Requirement and Language
 - フロントフレームワーク：Vue.js 2.x, Vuetify 2.x, JQuery 3.3.1
