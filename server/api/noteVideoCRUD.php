@@ -1,6 +1,7 @@
 <?php
 include('../db.php');
 include('../functions.php');
+
 /**
  * ノート・動画レコード 登録・更新API
  */
@@ -15,11 +16,13 @@ try{
   $which = $_POST["which"];
   $id = $_POST["id"];
   $title = h($_POST["title"]);
+  $tags = h($_POST["tags"]);
   $url = h($_POST["url"]);
   $publicity = $_POST["publicity"];
 
   if($which=="note"){
     $note = h($_POST["note"]);
+    
     if($type=="insert"){
       // ノートレコードを新規追加
       $noteInsertSql = "INSERT INTO linker_notes "
@@ -62,10 +65,11 @@ try{
     if($type=="insert"){
       // 動画レコードを新規追加
       $videoInsertSql = "INSERT INTO linker_videos "
-      ."(title, url, publicity, created_at, created_user_id, updated_at, updated_user_id) "
-      ."VALUES (:title, :url, :publicity, now(), :created_user_id, now(), :updated_user_id)";
+      ."(title, tags, url, publicity, created_at, created_user_id, updated_at, updated_user_id) "
+      ."VALUES (:title, :tags, :url, :publicity, now(), :created_user_id, now(), :updated_user_id)";
       $statement = $connection->prepare($videoInsertSql);
       $statement->bindValue(':title', $title);
+      $statement->bindValue(':tags', $tags);
       $statement->bindValue(':url', $url);
       $statement->bindValue(':publicity', $publicity);
       $statement->bindValue(':created_user_id', $user_id);
@@ -76,11 +80,12 @@ try{
     }else if($type=="update"){
       // 動画レコードを更新
       $videoUpdateSql = "UPDATE linker_videos SET "
-      ."title = :title, url = :url, publicity = :publicity, "
+      ."title = :title, tags = :tags, url = :url, publicity = :publicity, "
       ."updated_at = now(), updated_user_id = :updated_user_id "
       ."WHERE id = ".$id;
       $statement = $connection->prepare($videoUpdateSql);
       $statement->bindValue(':title', $title);
+      $statement->bindValue(':tags', $tags);
       $statement->bindValue(':url', $url);
       $statement->bindValue(':publicity', $publicity);
       $statement->bindValue(':updated_user_id', $user_id);

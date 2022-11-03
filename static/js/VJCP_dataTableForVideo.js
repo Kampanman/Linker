@@ -35,8 +35,7 @@
           <v-icon small @click="deleteItem(item)">mdi-delete</v-icon>
         </template>
       </v-data-table>
-    </v-card>
-    <br />
+    </v-card><br />
     <div v-if="formMode=='watch'" :class="formMode=='watch' ? 'fader' : 'none'">
       <tag-title>選択された動画</tag-title>
       <div><label><b>タイトル: </b></label><span v-text="viewVideo.title"></span></div><br />
@@ -48,7 +47,6 @@
         </iframe>
       </div>
     </div>
-
     <div 
       v-if="formMode=='init'" 
       :class="formMode=='init' ? 'fader' : 'none'"
@@ -67,6 +65,7 @@
         <section><br />
           <v-text-field label="動画タイトル" placeholder="タイトルを入力してください" v-model="selectItem.title"></v-text-field>
           <v-text-field label="URL" placeholder="URLを入力してください" v-model="selectItem.url"></v-text-field>
+          <v-text-field label="動画タグ" placeholder="タグを入力してください" v-model="selectItem.tags"></v-text-field>
           <div style="margin:5px;width:180px;">
             <v-app>
               <v-select label="公開設定" :items="pubStrs" v-model="selectItem.pub_str"></v-select>
@@ -77,6 +76,7 @@
           <ul style="list-style:none;">
             <li :style="styles.ctred" v-if="v_flg.isEmpty.title==true" @click="v_flg.isEmpty.title=false" v-text="client.phrase.validation.titleEmpty"></li>
             <li :style="styles.ctred" v-if="v_flg.length.title==true" @click="v_flg.length.title=false" v-text="client.phrase.validation.overTitle"></li>
+            <li :style="styles.ctred" v-if="v_flg.length.tags==true" @click="v_flg.length.tags=false" v-text="'設定タグの文字数が上限を超えています。'"></li>
             <li :style="styles.ctred" v-if="v_flg.isNotUrl==true" @click="v_flg.isNotUrl=false" v-text="client.phrase.validation.urlInvalid"></li>
             <li :style="styles.ctred" v-if="v_flg.isEmpty.url==true" @click="v_flg.isEmpty.url=false" v-text="client.phrase.validation.videoUrlEmpty"></li>
           </ul>
@@ -132,6 +132,7 @@
       selectItem:{
         id: "",
         title: "",
+        tags: "",
         url: "",
         publicity: "",
         pub_str: "公開",
@@ -200,11 +201,13 @@
         which: 'video',
         id: item.id
       }
+
       // axiosでPHPのAPIにパラメータを送信する場合は、次のようにする
       let params = new URLSearchParams();
       Object.keys(data).forEach(function (key) {
         params.append(key, this[key]);
       }, data);
+
       // ajax通信実行
       axios
         .post('../../server/api/searchGetter.php', params, this.headerObject)
@@ -227,29 +230,30 @@
       this.dialog.confirmDelete = true;
     },
     insertItem() {
-      this.selectItem = { id: "", title: "", url: "", publicity: "", pub_str: "公開" };
+      this.selectItem = { id: "", title: "", tags: "", url: "", publicity: "", pub_str: "公開" };
       this.reset_vFlg();
       this.formMode = 'create';
     },
     editItem(item) {
-
       let data = {
         search_for: 'single',
         which: 'video',
         id: item.id
       }
-      
+
       // axiosでPHPのAPIにパラメータを送信する場合は、次のようにする
       let params = new URLSearchParams();
       Object.keys(data).forEach(function (key) {
         params.append(key, this[key]);
       }, data);
+
       // ajax通信実行
       axios
         .post('../../server/api/searchGetter.php', params, this.headerObject)
         .then(response => {
           this.selectItem.id = item.id;
           this.selectItem.title = item.title;
+          this.selectItem.tags = item.tags;
           this.selectItem.url = response.data.result.video[0].url;
           this.selectItem.publicity = item.publicity;
           if(this.selectItem.publicity=="1"){
@@ -261,7 +265,6 @@
           }
           this.reset_vFlg();
           this.formMode = "edit";
-
         }).catch(error => alert("通信に失敗しました。"));
     },
     openInsertConfirm() {
@@ -284,8 +287,12 @@
         this.v_flg.isEmpty.title = true;
         decision = true;
       };
-      if(this.selectItem.title.length > 50){
+      if(this.selectItem.title.length > 100){
         this.v_flg.length.title = true;
+        decision = true;
+      };
+      if(this.selectItem.tags.length > 100){
+        this.v_flg.length.tags = true;
         decision = true;
       };
       if(this.selectItem.url==""){
@@ -308,15 +315,18 @@
         type: 'insert',
         which: 'video',
         title: this.selectItem.title,
+        tags: this.selectItem.tags,
         url: this.selectItem.url,
         publicity: this.convertPublicity(this.selectItem.pub_str),
         user_id: this.id,
       }
+
       // axiosでPHPのAPIにパラメータを送信する場合は、次のようにする
       let params = new URLSearchParams();
       Object.keys(data).forEach(function (key) {
         params.append(key, this[key]);
       }, data);
+
       // ajax通信実行
       axios
         .post('../../server/api/noteVideoCRUD.php', params, this.headerObject)
@@ -331,15 +341,18 @@
         which: 'video',
         id: this.selectItem.id,
         title: this.selectItem.title,
+        tags: this.selectItem.tags,
         url: this.selectItem.url,
         publicity: this.convertPublicity(this.selectItem.pub_str),
         user_id: this.id,
       }
+
       // axiosでPHPのAPIにパラメータを送信する場合は、次のようにする
       let params = new URLSearchParams();
       Object.keys(data).forEach(function (key) {
         params.append(key, this[key]);
       }, data);
+
       // ajax通信実行
       axios
         .post('../../server/api/noteVideoCRUD.php', params, this.headerObject)
@@ -360,11 +373,13 @@
         which: 'video',
         id: this.selectItem.id,
       }
+
       // axiosでPHPのAPIにパラメータを送信する場合は、次のようにする
       let params = new URLSearchParams();
       Object.keys(data).forEach(function (key) {
         params.append(key, this[key]);
       }, data);
+
       // ajax通信実行
       axios
         .post('../../server/api/noteVideoCRUD.php', params, this.headerObject)

@@ -65,8 +65,11 @@
           </div><br />
           <div>
             <v-app>
-              <v-textarea outlined label="ノート本文" v-model="selectItem.note" placeholder="本文を入力してください（最大字数：空白・改行含め半角44,000文字）"></v-textarea>
+              <v-textarea outlined label="ノート本文" v-model="selectItem.note" @input="biteCount" 
+                placeholder="本文を入力してください（最大字数：空白・改行含め半角44,000文字）"
+              ></v-textarea>
             </v-app>
+            <p align="center" v-if="currentBite!=0" v-text="'現在の本文総バイト数 ： '+ currentBite +' バイト'"></p>
           </div>
           <div class="changeFlex" :style="styles.replaceArea">
             <v-text-field label="一括置換対象文字" v-model="replaceBefore" style="max-width:200px;margin-right:1em;"></v-text-field>
@@ -82,7 +85,7 @@
             <li :style="styles.ctred" v-if="v_flg.isEmpty.note==true" @click="v_flg.isEmpty.note=false" v-text="client.phrase.validation.noteEmpty"></li>
             <li :style="styles.ctred" v-if="v_flg.length.title==true" @click="v_flg.length.title=false" v-text="client.phrase.validation.overTitle"></li>
             <li :style="styles.ctred" v-if="v_flg.isNotUrl==true" @click="v_flg.isNotUrl=false" v-text="client.phrase.validation.urlInvalid"></li>
-            <li :style="styles.ctred" v-if="noteOverLength==true" @click="noteOverLength=false">本文の文字数が上限を超えています</li>
+            <li :style="styles.ctred" v-if="noteOverBite==true" @click="noteOverBite=false">本文の総バイト数が65,000を超えています</li>
           </ul>
         </p>
         <section align="center">
@@ -147,7 +150,8 @@
       },
       client: this.cl,
       v_flg: this.cl.validationflg,
-      noteOverLength: false,
+      currentBite: 0,
+      noteOverBite: false,
       pubStrs: ["公開","講師にのみ公開","非公開"],
       selectItem:{
         id: "",
@@ -217,9 +221,11 @@
       this.selectItem.title = item.title;
       this.selectItem.publicity = item.publicity;
       this.dialog.confirmDelete = true;
+      this.currentBite = 0;
     },
     insertItem() {
       this.selectItem = { id: "", title: "", url: "", note: "", publicity: "", pub_str: "公開" };
+      this.currentBite = 0;
       this.replaceBefore = "";
       this.replaceAfter = "";
       this.judgeStyle();
@@ -233,12 +239,14 @@
         which: 'note',
         id: item.id
       }
-      
+      this.currentBite = 0;
+
       // axiosでPHPのAPIにパラメータを送信する場合は、次のようにする
       let params = new URLSearchParams();
       Object.keys(data).forEach(function (key) {
         params.append(key, this[key]);
       }, data);
+
       // ajax通信実行
       axios
         .post('../../server/api/searchGetter.php', params, this.headerObject)
@@ -324,7 +332,7 @@
         this.v_flg.isEmpty.title = true;
         decision = true;
       };
-      if(this.selectItem.title.length > 50){
+      if(this.selectItem.title.length > 100){
         this.v_flg.length.title = true;
         decision = true;
       };
@@ -332,8 +340,8 @@
         this.v_flg.isEmpty.note = true;
         decision = true;
       };
-      if(this.charCount(this.selectItem.note) > 44000){
-        this.noteOverLength = true;
+      if(this.biteCount(this.selectItem.note) > 65000){
+        this.noteOverBite = true;
         decision = true;        
       }
       if(this.selectItem.url!=""){
@@ -344,16 +352,12 @@
           decision = true;
         }
       };
-
       return decision;
     },
-    charCount (str) {
-      let len = 0;
-      for (let i = 0; i < str.length; i++) {
-        (str[i].match(/[ -~]/)) ? len += 1 : len += 2;
-      }
-
-      return len;
+    biteCount () {
+      let number_bytes = encodeURI(this.selectItem.note).replace(/%../g, "*").length;
+      this.currentBite = number_bytes;
+      return number_bytes;
     },
     doInsert() {
       let data = {

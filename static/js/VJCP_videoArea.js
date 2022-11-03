@@ -25,12 +25,14 @@ let videoArea = Vue.component('video-area', {
               @click="getThisDataId($event)">表示</v-btn>
             <span v-if="item.last==0" style="margin-left:10px;margin-right:10px;"> / </span>
           </p>
-        </section>
-        <br /><br />
+        </section><br /><br />
         <div v-if="openSection.videoInto" :class="openSection.videoInto==true ? 'fader' : 'none'">
           <tag-title>選択された動画</tag-title>
           <div :style="styles.alignItem">
             <label><b>登録者: </b></label><span>{{ videoDetail.author }}</span>
+          </div>
+          <div v-if="videoDetail.tags!=null" :style="styles.alignItem">
+            <label><b>登録タグ: </b></label><span>{{ videoDetail.tags }}</span>
           </div>
           <div :style="styles.alignItem"><label><b>タイトル: </b></label><span>{{ videoDetail.title }}</span></div>
           <div :style="styles.alignItem">
@@ -83,7 +85,6 @@ let videoArea = Vue.component('video-area', {
       Object.keys(data).forEach(function (key) {
         params.append(key, this[key]);
       }, data);
-
       // ajax通信実行
       axios
         .post('../../server/api/searchGetter.php', params, this.headerObject)
@@ -94,6 +95,7 @@ let videoArea = Vue.component('video-area', {
           this.videoDetail = {
             title: videoResult.title,
             url: videoResult.url,
+            tags: videoResult.tags,
             author: videoResult.author,
             created: reCreated,
             updated: reUpdated,
@@ -102,8 +104,6 @@ let videoArea = Vue.component('video-area', {
           this.openSection.videoInto = true;
         })
         .catch(error => alert("通信に失敗しました。"));
-
-
       const v_area = document.getElementById('videoArea');
       if(window.innerWidth>=480){
         this.styles.widthFlex = "display:flex;justify-content: space-between;";

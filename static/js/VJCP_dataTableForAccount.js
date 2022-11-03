@@ -47,9 +47,21 @@ let dataTableForAccount = Vue.component('table-account', {
           <section align="right">
             <v-btn class="mx-2" fab small :style="client.palette.brownBack" @click="formMode = 'init'">×</v-btn>
           </section>
+          <section style="display:flex" v-if="formMode!='create'">
+            <div style="padding-right:1em;">
+              <label style="margin-right:0.3em;"><b>アカウント名の編集</b></label>
+              <v-btn :style="client.palette.brownFront" v-if="onEditAccountName == false" @click="onEditAccountName = true">有効にする</v-btn>
+              <v-btn :style="client.palette.brownBack" v-if="onEditAccountName == true" @click="onEditAccountName = false">無効にする</v-btn>
+            </div>
+            <div>
+              <label style="margin-right:0.3em;"><b>ログインIDの編集</b></label>
+              <v-btn :style="client.palette.brownFront" v-if="onEditAccountId == false" @click="onEditAccountId = true">有効にする</v-btn>
+              <v-btn :style="client.palette.brownBack" v-if="onEditAccountId == true" @click="onEditAccountId = false">無効にする</v-btn>
+            </div>
+          </section>
           <section><br />
-            <v-text-field label="アカウント名" v-model="selectItem.name" placeholder="アカウント名前を入力してください"></v-text-field>
-            <v-text-field label="ログインID" v-model="selectItem.login_id" placeholder="ログインID（メールアドレス）を入力してください"></v-text-field>
+            <v-text-field label="アカウント名" v-model="selectItem.name" placeholder="アカウント名を入力してください" :disabled="onEditAccountName == false"></v-text-field>
+            <v-text-field label="ログインID" v-model="selectItem.login_id" placeholder="ログインID（メールアドレス）を入力してください" :disabled="onEditAccountId == false"></v-text-field>
             <v-text-field label="パスワード" v-model="selectItem.password" placeholder="パスワード（半角英数字混在 6字以上16字以内）を入力してください" v-if="formMode=='create'"></v-text-field>
             <div style="margin:5px;width:180px;">
               <v-app>
@@ -152,6 +164,8 @@ let dataTableForAccount = Vue.component('table-account', {
       v_flg: this.cl.validationflg,
       isNotMailAddress: false,
       validMessage: this.cl.phrase.validation,
+      onEditAccountName: false,
+      onEditAccountId: false,
       is_teacherStrs: ['一般', '講師'],
       selectItem: {
         id: '',
@@ -225,6 +239,8 @@ let dataTableForAccount = Vue.component('table-account', {
         isTeacher_str: '一般',
       };
       this.reset_vFlg();
+      this.onEditAccountName = true;
+      this.onEditAccountId = true;
       this.formMode = 'create';
     },
     editItem(item) {
@@ -251,6 +267,8 @@ let dataTableForAccount = Vue.component('table-account', {
             this.selectItem.isTeacher_str = '一般';
           }
           this.reset_vFlg();
+          this.onEditAccountName = false;
+          this.onEditAccountId = false;
           this.formMode = 'edit';
         })
         .catch(error => alert('通信に失敗しました。'));
@@ -273,7 +291,7 @@ let dataTableForAccount = Vue.component('table-account', {
       }
     },
     judgeAlreadies() {
-      if (this.selectItem.name != '') {
+      if (this.selectItem.name != '' && this.onEditAccountName) {
         let data = { name: this.selectItem.name };
         let params = new URLSearchParams();
         params.append('formMode', this.formMode);
@@ -291,7 +309,7 @@ let dataTableForAccount = Vue.component('table-account', {
           })
           .catch(error => alert('通信に失敗しました。'));
       }
-      if (this.selectItem.login_id != '') {
+      if (this.selectItem.login_id != '' && this.onEditAccountId) {
         let data = { login_id: this.selectItem.login_id };
         let params = new URLSearchParams();
         params.append('formMode', this.formMode);
@@ -364,6 +382,7 @@ let dataTableForAccount = Vue.component('table-account', {
       Object.keys(data).forEach(function (key) {
         params.append(key, this[key]);
       }, data);
+
       // ajax通信実行
       axios
         .post('../../server/api/accountCRUD.php', params, this.headerObject)
@@ -388,6 +407,7 @@ let dataTableForAccount = Vue.component('table-account', {
       Object.keys(data).forEach(function (key) {
         params.append(key, this[key]);
       }, data);
+
       // ajax通信実行
       axios
         .post('../../server/api/accountCRUD.php', params, this.headerObject)

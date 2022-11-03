@@ -28,7 +28,7 @@ try{
       $res = json_encode($noteResult);
     }else{
       // 検索条件に合致する動画レコードを取得
-      $videoSql = "SELECT id, title, publicity, ".
+      $videoSql = "SELECT id, title, tags, publicity, ".
       "CASE WHEN publicity = '1' THEN '公開' WHEN publicity = '2' THEN '講師にのみ公開' ELSE '非公開' END pub_str, created_at "
       ."FROM `linker_videos` WHERE created_user_id = ".$user_id." ORDER BY updated_at DESC";
       $statement = $connection->prepare($videoSql);
