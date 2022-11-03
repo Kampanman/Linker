@@ -3,6 +3,7 @@
  */
 
 let validation = {
+  
   // 未入力エラー
   isEmpty: {
     // タイトル
@@ -26,6 +27,8 @@ let validation = {
   length: {
     // タイトル
     title: false,
+    // タグ
+    tags: false,
     // アカウント
     account: {
       // アカウント名
@@ -50,6 +53,7 @@ let validation = {
     // ログインID
     loginID: false,
   },
+
 };
 
 export default validation;

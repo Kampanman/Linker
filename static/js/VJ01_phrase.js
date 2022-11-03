@@ -29,7 +29,7 @@ let phrase = {
     loginIDEmpty: empty("ログインID"),
     passwordEmpty: empty("パスワード"),
     videoUrlEmpty: "動画はURL入力が必須です。URLを入力してください。",
-    overTitle: over("タイトル", 50),
+    overTitle: over("タイトル", 100),
     overAccount: over("アカウント名", 16),
     rangeOutPassword: range("パスワード", 6, 16),
     urlInvalid: "正しいURLを入力してください。",

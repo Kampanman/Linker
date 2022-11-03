@@ -26,7 +26,7 @@ try{
     $view_count = $_POST["view_count"];
     $plus_contents = $_POST["note_or_video"];
     $and_or = $_POST["and_or"]; // and:0, or:1
-    $title_or_body = $_POST["title_or_body"]; // 動画のみ:0, ノートタイトル:1, ノート本文:2
+    $title_or_body = $_POST["title_or_body"];
 
     // キーワードがセットされている場合は、レスポンスパラメータに値を設定する
     if(isset($keyword)){
@@ -97,12 +97,17 @@ try{
         for($i=0; $i<count($keyword_array); $i++){
           $keyword_array[$i] = "'%".$keyword_array[$i]."%' ";
         };
+        
+        // キーワードが、ノートタイトル・ノート本文のどちらに含まれているかで場合分けを行う
         $title_or_body_string = "title";
         if($title_or_body=="1") $title_or_body_string = "note";
+        // キーワードが、動画タイトル・動画タグのどちらに含まれているかで場合分けを行う
+        $videoWhich_string = "title";
+        if($title_or_body=="1") $videoWhich_string = "tags";
         $and_or_string = "AND ";
         if($and_or=="1") $and_or_string = "OR ";
         $note_wordCondition = implode($and_or_string."notes.".$title_or_body_string." LIKE ", $keyword_array);
-        $video_wordCondition = implode($and_or_string."videos.".$title_or_body_string." LIKE ", $keyword_array);
+        $video_wordCondition = implode($and_or_string."videos.".$videoWhich_string." LIKE ", $keyword_array);
 
         // コモンページと個別マイページ（一般or講師）とで、WHERE句の場合分けを行う
         $noteWhere = "";
@@ -132,9 +137,9 @@ try{
         $res['result']["note"] = $noteResult;
 
         // 検索条件に合致する動画レコードを取得
-        $videoSql = "SELECT videos.id, videos.title, videos.url, acc.is_teacher, 0 as last FROM `linker_videos` videos "
+        $videoSql = "SELECT videos.id, videos.title, videos.tags, videos.url, acc.is_teacher, 0 as last FROM `linker_videos` videos "
         ."JOIN `linker_accounts` acc on videos.created_user_id = acc.id "
-        .$videoWhere."AND videos.title LIKE ".$video_wordCondition."ORDER BY videos.updated_at DESC LIMIT ".$view_count;
+        .$videoWhere."AND videos.".$videoWhich_string." LIKE ".$video_wordCondition."ORDER BY videos.updated_at DESC LIMIT ".$view_count;
         $statement = $connection->prepare($videoSql);
         $statement->execute();
         $videoResult = $statement->fetchAll(PDO::FETCH_ASSOC);
@@ -173,7 +178,7 @@ try{
       $res['result']["note"] = $noteResult;
     }else{
       // idに対応する動画レコードを取得
-      $videoSql_single = "SELECT videos.id, videos.title, videos.url, "
+      $videoSql_single = "SELECT videos.id, videos.title, videos.tags, videos.url, "
       ."videos.created_at created, videos.updated_at updated, acc.name author FROM `linker_videos` videos "
       ."JOIN `linker_accounts` acc on videos.created_user_id = acc.id "
       ."WHERE videos.id = ".$id." LIMIT 1";

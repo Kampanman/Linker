@@ -66,6 +66,10 @@
         background-color: rgb(239, 235, 222);
       }
 
+      .dialog>div>.v-application--wrap {
+        background-color: #8ea99b;
+      }
+
       .v-list-item {
         min-height: 0vh;
         height: 27px;
@@ -201,7 +205,7 @@
                   <p v-if="viewCountNull == true" style="color:red;cursor:pointer;" @click="viewCountNull = false">表示件数が選択されていません</p>
                   <br v-if="viewCountNull == true" />
                   <v-btn :style="client.palette.brownFront" :disabled="client.form.search.gawty==''" @click="doSearch">検索実行</v-btn>
-                  <v-btn :style="client.palette.brownBack" @click="doClear">クリア</v-btn>
+                  <v-btn :style="client.palette.brownBack" @click="confirmReloadDialog = true">リロード</v-btn>
                 </div>
               </template>
             </card-sec>
@@ -261,6 +265,12 @@
       </div>
       <!-- / WRAPPER -->
 
+      <!-- リロード確認ダイアログ -->
+      <dialog-frame-normal :target="confirmReloadDialog" :title="'リロード確認'" :contents="'画面の再読み込みをします。よろしいですか？'">
+        <v-btn @click="doReload" :style="client.palette.brownFront" v-text="client.phrase.button.do"></v-btn>
+        <v-btn @click="confirmReloadDialog = false" :style="client.palette.brownBack" v-text="client.phrase.button.cancel"></v-btn>
+      </dialog-frame-normal>
+      
     </div>
     <!-- Vue Area -->
 
@@ -281,6 +291,7 @@
       import searchFormInner from '../../static/js/VJCP_searchFormInner.js';
       import noteArea from '../../static/js/VJCP_noteArea.js';
       import videoArea from '../../static/js/VJCP_videoArea.js';
+      import dialogFrameNormal from '../../static/js/VJCP_dialogFrameNormal.js';
 
       // #vueForCommon内でVue.jsの機能を有効化する
       const common = new Vue({
@@ -294,6 +305,7 @@
             client: client,
             palette: colorPalette,
             viewCountNull: false,
+            confirmReloadDialog: false,
             openSection: {
               message: true,
               login: false,
@@ -406,15 +418,8 @@
                 }
               }).catch(error => alert("通信に失敗しました。"));
           },
-          doClear() {
-            this.resetOpenSection();
-            client.form.search = {
-              gawty: '',
-              createdUser: '',
-              term: { start: '', end: '' },
-              which: { andOr: 0, noteOrVideo: 0, titleOrBody: 0 },
-              viewCount: '',
-            };
+          doReload() {
+            location.reload();
           },
           resetOpenSection(){
             // 検索時の個別エリアを初期化する

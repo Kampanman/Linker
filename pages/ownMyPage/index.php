@@ -184,11 +184,13 @@
                   >
                     <label><b>検索結果をログに追加： </b></label>
                     <v-btn :style="client.palette.orangeBack" v-if="logInsert == 1" @click="logInsert = 0">有効</v-btn>
-                    <v-btn :style="client.palette.orangeFront" v-if="logInsert == 0" @click="logInsert = 1">無効</v-btn>
+                    <v-btn :style="client.palette.orangeFront" v-if="logInsert == 0" @click="activatelogInsert">無効</v-btn>
+                    <br v-if="wordRecordMode" /><br v-if="wordRecordMode" />
+                    <p v-if="wordRecordMode" style="color:green;cursor:pointer;" align="center" @click="wordRecordMode = false"><b>検索したワードを、検索ワードログに登録します。</b></p>
                   </div>
                   <div>
                     <v-btn :style="client.palette.brownFront" :disabled="client.form.search.gawty==''" @click="doSearch">検索実行</v-btn>
-                    <v-btn :style="client.palette.brownBack" @click="doClear">クリア</v-btn>
+                    <v-btn :style="client.palette.brownBack" @click="confirmReloadDialog = true">リロード</v-btn>
                   </div>
                   <div :style="styles.alignItem">
                     <v-btn :style="client.palette.pinkFront" @click="showSearchLog">検索ワードログを表示</v-btn>
@@ -272,6 +274,12 @@
       </div>
       <!-- / WRAPPER -->
 
+      <!-- リロード確認ダイアログ -->
+      <dialog-frame-normal :target="confirmReloadDialog" :title="'リロード確認'" :contents="'画面の再読み込みをします。よろしいですか？'">
+        <v-btn @click="doReload" :style="client.palette.brownFront" v-text="client.phrase.button.do"></v-btn>
+        <v-btn @click="confirmReloadDialog = false" :style="client.palette.brownBack" v-text="client.phrase.button.cancel"></v-btn>
+      </dialog-frame-normal>
+
       <!-- ログアウト確認ダイアログ -->
       <dialog-frame-normal :target="logoutDialog" :title="'ログアウト確認'" :contents="client.phrase.message.logoutConfirm">
         <v-btn @click="doLogout" :style="client.palette.brownFront" v-text="client.phrase.button.do"></v-btn>
@@ -322,6 +330,7 @@
             doneLogInsert: false,
             failInsert: false,
             viewCountNull: false,
+            wordRecordMode: false,
             createdDoubleSet: false,
             palette: colorPalette,
             openSection: {
@@ -335,15 +344,8 @@
               videoInto: false,
               insertEdit: false,
             },
+            confirmReloadDialog: false,
             logoutDialog: false,
-            dialog: {
-              confirmInsert: false,
-              completeInsert: false,
-              confirmUpdate: false,
-              completeUpdate: false,
-              confirmDelete: false,
-              completeDelete: false,
-            },
             styles: {
               linkerLogoBtn: "cursor: pointer; border: 3px solid #f1a753; border-radius: 5px;",
               teacherBadge: `border: 2px solid orange;border-radius: 5px;background: yellow;
@@ -500,17 +502,8 @@
               // 個人検索ログに検索結果を挿入（ログデータがない場合はレコード作成）
               this.insertSearchLog();
           },
-          doClear() {
-            this.resetOpenSection();
-            client.form.search = {
-              gawty: '',
-              createdUser: '',
-              term: { start: '', end: '' },
-              which: { andOr: 0, noteOrVideo: 1, titleOrBody: 0 },
-              viewCount: '',
-            };
-            this.viewOnlyOwn = 0;
-            this.logInsert = 0;
+          doReload() {
+            location.reload();
           },
           resetBeforeSearch() {
             // gawtyエリアの各ボタンリンクを初期化
@@ -587,6 +580,11 @@
                 };
               }).catch(error => alert("通信に失敗しました。"));
           },
+          activatelogInsert() {
+            this.logInsert = 1;
+            this.wordRecordMode = true;
+            setTimeout((e)=> this.wordRecordMode = false, 2000);
+          },
           insertSearchLog() {
             if(this.logInsert==1){
               let today = new Date();
@@ -594,16 +592,23 @@
                 user_id: this.client.form.auth.accountID,
                 word: `${this.getStringFromDate(today)} | You searched ${this.client.form.search.gawty.trim()}.\n`,
               };
+
               // axiosでPHPのAPIにパラメータを送信する場合は、次のようにする
               let params = new URLSearchParams();
               Object.keys(data).forEach(function (key) {
                 params.append(key, this[key]);
               }, data);
+              
               // ajax通信実行
               axios
                 .post('../../server/api/insertSearchLog.php', params, this.headerObject)
                 .then(response => {
-                  (response.data=="OVER") ? this.failInsert = true : this.doneLogInsert = true;
+                  if(response.data=="OVER"){
+                    this.failInsert = true
+                  }else{
+                    this.doneLogInsert = true;
+                    setTimeout((e)=> this.doneLogInsert = false, 2000);
+                  }
                 }).catch(error => alert("通信に失敗しました。"));
             } 
           },

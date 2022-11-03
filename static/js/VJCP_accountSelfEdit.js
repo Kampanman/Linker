@@ -13,7 +13,7 @@ let accountSelfEdit = Vue.component('account-self', {
         <v-text-field label="アカウント名" 
           v-if="changeValid.account == true" 
           v-model="selectItem.name" 
-          placeholder="アカウント名前を入力してください"
+          placeholder="アカウント名を入力してください"
           :class="changeValid.account == true ? 'fader' : 'none'"
         ></v-text-field>
       </div>

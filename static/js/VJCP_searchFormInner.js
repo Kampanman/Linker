@@ -43,8 +43,8 @@ let searchFormInner = Vue.component('search-inner', {
 				<div style="margin:5px">
 					<label><b>ノートの検索対象 </b></label>
 					<v-btn v-if="client.form.search.which.titleOrBody==0" :style="client.palette.greenFront" 
-						@click="client.form.search.which.titleOrBody = 1">タイトル</v-btn>
-					<v-btn v-else :style="client.palette.greenBack" @click="client.form.search.which.titleOrBody = 0">本文中</v-btn>
+						@click="client.form.search.which.titleOrBody = 1">タイトル内</v-btn>
+					<v-btn v-else :style="client.palette.greenBack" @click="client.form.search.which.titleOrBody = 0">本文中・タグ</v-btn>
 				</div>
 				<div style="margin:5px">
 					<label><b>検索モード </b></label>
@@ -58,7 +58,7 @@ let searchFormInner = Vue.component('search-inner', {
   data: function () {
     return {
       client: this.prop,
-      items: [10, 50, 100],
+      items: [10, 50, 100, 500],
 			styles: { widthFlex: '' },
     };
   },
