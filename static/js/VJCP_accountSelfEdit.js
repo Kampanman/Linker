@@ -46,6 +46,21 @@ let accountSelfEdit = Vue.component('account-self', {
           oncopy="return false"
         ></v-text-field>
       </div>
+      <div style="padding:1em;">
+        <v-text-field label="ノート挿入ワード１" v-model="selectItem.insert_word_1st" placeholder="挿入ワードを入力してください（30字以内）"></v-text-field>
+        <v-text-field label="ノート挿入ワード２" 
+          v-if="selectItem.insert_word_1st!=''" 
+          v-model="selectItem.insert_word_2nd" 
+          placeholder="挿入ワードを入力してください（30字以内）" 
+          :class="(selectItem.insert_word_1st!='') ? 'fader' : 'none'" 
+        ></v-text-field>
+        <v-text-field label="ノート挿入ワード３" 
+          v-if="(selectItem.insert_word_1st!='') && (selectItem.insert_word_2nd!='')" 
+          v-model="selectItem.insert_word_3rd" 
+          placeholder="挿入ワードを入力してください（30字以内）" 
+          :class="(selectItem.insert_word_2nd!='') ? 'fader' : 'none'" 
+        ></v-text-field>
+      </div>
       <div v-if="selectItem.id!='1'" style="margin:5px;width:180px;">
         <v-app>
           <v-select v-if="selectItem.is_teacher==1 && selectItem.id!=1" label="権限" :items="is_teacherStrs" v-model="selectItem.isTeacher_str"></v-select>
@@ -102,6 +117,9 @@ let accountSelfEdit = Vue.component('account-self', {
         is_teacher: '',
         isTeacher_str: '一般',
         comment: '',
+        insert_word_1st: '',
+        insert_word_2nd: '',
+        insert_word_3rd: '',
       },
       changeValid: {
         account: false,
@@ -122,12 +140,14 @@ let accountSelfEdit = Vue.component('account-self', {
   },
   props: ['id', 'cl'],
   methods: {
+
     // 画面初期表示処理
     async init() {
       this.reset_vFlg();
       this.getAccountInfo();
     },
     getAccountInfo() {
+
       // axiosでPHPのAPIにパラメータを送信する場合は、次のようにする
       let params = new URLSearchParams();
       params.append('search_for', 'self');
@@ -144,6 +164,9 @@ let accountSelfEdit = Vue.component('account-self', {
           this.selectItem.is_teacher = res.is_teacher;
           this.selectItem.isTeacher_str = res.isTeacher_str;
           this.selectItem.comment = res.comment;
+          this.selectItem.insert_word_1st = (res.insert_word_1st==null) ? '' : res.insert_word_1st;
+          this.selectItem.insert_word_2nd = (res.insert_word_2nd==null) ? '' : res.insert_word_2nd;
+          this.selectItem.insert_word_3rd = (res.insert_word_3rd==null) ? '' : res.insert_word_3rd;
         })
         .catch(error => alert("通信に失敗しました。"));
     },
@@ -222,7 +245,6 @@ let accountSelfEdit = Vue.component('account-self', {
           decide = true;
         }
       }
-
       return decide;
     },
     doUpdate() {
@@ -235,6 +257,9 @@ let accountSelfEdit = Vue.component('account-self', {
         password: this.selectItem.password,
         is_teacher: numIs_teacher,
         comment: this.selectItem.comment,
+        insert_word_1st: this.selectItem.insert_word_1st,
+        insert_word_2nd: this.selectItem.insert_word_2nd,
+        insert_word_3rd: this.selectItem.insert_word_3rd
       };
       this.changeValid.password == true ? (data.type = 'self') : (data.type = 'nonpass');
       console.log('data', data);

@@ -11,7 +11,7 @@ $res = 0;
 try{
   // クライアント側から取得してきたパラメータを定義
   $search_for = $_POST["search_for"];
-  $accountSql = "SELECT id, name, login_id, comment, is_teacher, "
+  $accountSql = "SELECT id, name, login_id, comment, is_teacher, insert_word_1st, insert_word_2nd, insert_word_3rd, "
       ."CASE WHEN is_teacher = '1' THEN '講師' ELSE '一般' END isTeacher_str, is_stopped FROM `linker_accounts`";
 
   if($search_for == "list"){
