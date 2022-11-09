@@ -58,10 +58,32 @@
             </v-app>
           </div>
           <div>
-            <label style="margin-right:1em;"><b>選択した部分を</b></label>
+            <label style="margin-right:1em;"><b>選択した部分</b></label>
             <v-btn :style="'margin:5px;' + client.palette.brownFront" v-text="'【】で囲む'" @click="surroundKakko"></v-btn>
             <v-btn :style="'margin:5px;' + client.palette.brownFront" v-text="'前後に☆をつける'" @click="surroundStar"></v-btn>
+            <v-btn :style="'margin:5px;' + client.palette.brownFront" v-text="'半角化する'" @click="toHalfWidth"></v-btn>
             <v-btn :style="'margin:5px;' + client.palette.brownFront" v-text="'秘匿する'" @click="toSecret"></v-btn>
+          </div>
+          <div v-if="selectItem.insert_word_1st!=''">
+            <label style="margin-right:1em;"><b>次の文字を挿入</b></label>
+            <v-btn v-if="selectItem.insert_word_1st != ''"
+              :style="'margin:5px;' + client.palette.brownFront" 
+              :data-value="selectItem.insert_word_1st" 
+              v-text="selectItem.insert_word_1st" 
+              @click="insertWord($event)"
+            ></v-btn>
+            <v-btn v-if="selectItem.insert_word_2nd != ''"
+              :style="'margin:5px;' + client.palette.brownFront" 
+              :data-value="selectItem.insert_word_2nd" 
+              v-text="selectItem.insert_word_2nd" 
+              @click="insertWord($event)"
+            ></v-btn>
+            <v-btn v-if="selectItem.insert_word_3rd != ''"
+              :style="'margin:5px;' + client.palette.brownFront" 
+              :data-value="selectItem.insert_word_3rd" 
+              v-text="selectItem.insert_word_3rd" 
+              @click="insertWord($event)"
+            ></v-btn>
           </div><br />
           <div>
             <v-app>
@@ -157,6 +179,9 @@
         id: "",
         title: "",
         url: "",
+        insert_word_1st: "",
+        insert_word_2nd: "",
+        insert_word_3rd: "",
         note: "",
         publicity: "",
         pub_str: "公開",
@@ -193,6 +218,7 @@
   },
   props: ['id','cl'],
   methods: {
+
     // 画面初期表示処理
     async init() {
       this.getAccountNote();
@@ -224,7 +250,17 @@
       this.currentBite = 0;
     },
     insertItem() {
-      this.selectItem = { id: "", title: "", url: "", note: "", publicity: "", pub_str: "公開" };
+      this.selectItem = { 
+        id: "", 
+        title: "", 
+        url: "",
+        insert_word_1st: "",
+        insert_word_2nd: "",
+        insert_word_3rd: "",
+        note: "", 
+        publicity: "", 
+        pub_str: "公開"
+      };
       this.currentBite = 0;
       this.replaceBefore = "";
       this.replaceAfter = "";
@@ -255,6 +291,9 @@
           this.selectItem.title = item.title;
           this.selectItem.url = response.data.result.note[0].url;
           this.selectItem.note = response.data.result.note[0].note;
+          this.selectItem.insert_word_1st = response.data.result.note[0].insert_word_1st,
+          this.selectItem.insert_word_2nd = response.data.result.note[0].insert_word_2nd,
+          this.selectItem.insert_word_3rd = response.data.result.note[0].insert_word_3rd,
           this.selectItem.publicity = item.publicity;
           if(this.selectItem.publicity=="1"){
             this.selectItem.pub_str = "公開";
@@ -280,29 +319,55 @@
     surroundStar() {
       this.surrounder("☆","☆");
     },
-    toSecret() {
+    setSelection() {
       let textarea = document.querySelector('textarea');
       let pos_start = textarea.selectionStart;
       let pos_end = textarea.selectionEnd;
       let val = textarea.value;
-      let range = val.slice(pos_start, pos_end);
-      let beforeNode = val.slice(0, pos_start);
-      let afterNode = val.slice(pos_end);
+      let selectionObject = {
+        textarea: textarea,
+        range: val.slice(pos_start, pos_end),
+        beforeNode: val.slice(0, pos_start),
+        afterNode: val.slice(pos_end)
+      };
+      return selectionObject;
+    },
+    toHalfWidth() {
+      let textarea = this.setSelection().textarea;
+      let range = this.setSelection().range;
+      let beforeNode = this.setSelection().beforeNode;
+      let afterNode = this.setSelection().afterNode;
+      range = range.replace(/[！-～]/g, function(range){
+        return String.fromCharCode(range.charCodeAt(0)-0xFEE0);
+      });
+      if(range.length > 0) textarea.value = beforeNode + range + afterNode;
+      this.selectItem.note = textarea.value;
+    },
+    toSecret() {
+      let textarea = this.setSelection().textarea;
+      let range = this.setSelection().range;
+      let beforeNode = this.setSelection().beforeNode;
+      let afterNode = this.setSelection().afterNode;
       const phraseArray = ["【＿見せられません＿】","【＿秘匿事項です＿】","【＿勘弁して下さい＿】","【＿ゴバァッ！＿】","【＿ぐぶっッ！＿】"];
       let insertNode = phraseArray[Math.floor(Math.random() * phraseArray.length)];
       if(range.length > 0) textarea.value = beforeNode + insertNode + afterNode;
       this.selectItem.note = textarea.value;
     },
     surrounder(startStr, endStr) {
-      let textarea = document.querySelector('textarea');
-      let pos_start = textarea.selectionStart;
-      let pos_end = textarea.selectionEnd;
-      let val = textarea.value;
-      let range = val.slice(pos_start, pos_end);
-      let beforeNode = val.slice(0, pos_start);
-      let afterNode = val.slice(pos_end);
+      let textarea = this.setSelection().textarea;
+      let range = this.setSelection().range;
+      let beforeNode = this.setSelection().beforeNode;
+      let afterNode = this.setSelection().afterNode;
       let insertNode = startStr + range + endStr;
       if(range.length > 0) textarea.value = beforeNode + insertNode + afterNode;
+      this.selectItem.note = textarea.value;
+    },
+    insertWord(event) {
+      let insertWord = event.target.dataset.value;
+      let textarea = this.setSelection().textarea;
+      let beforeNode = this.setSelection().beforeNode;
+      let afterNode = this.setSelection().afterNode;
+      textarea.value = beforeNode + insertWord + afterNode;
       this.selectItem.note = textarea.value;
     },
     allReplace() {

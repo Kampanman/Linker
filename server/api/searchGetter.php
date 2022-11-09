@@ -169,6 +169,7 @@ try{
     if($which=='note'){
       // idに対応するノートレコードを取得
       $noteSql_single = "SELECT notes.id, notes.title, notes.url, notes.note, "
+      ."acc.insert_word_1st, acc.insert_word_2nd, acc.insert_word_3rd, "
       ."notes.created_at created, notes.updated_at updated, acc.name author FROM `linker_notes` notes "
       ."JOIN `linker_accounts` acc on notes.created_user_id = acc.id "
       ."WHERE notes.id = ".$id." LIMIT 1";
@@ -192,7 +193,6 @@ try{
   }
   // リクエスト先とapi直接アクセス時の画面にはこの値を返す
   echo $res;
-
 }catch(Exception $e){
   echo $e->getMessage();
 }
