@@ -59,7 +59,7 @@ let noteArea = Vue.component('note-area', {
             <label><b>初回登録: </b></label><span id="createdDate">{{ noteDetail.created }}</span>
             <span><b>）</b></span>
           </div><br />
-          <p align="center">
+          <p align="center" class="aboutHighlight">
             キーワード入力欄に入力されている文字が含まれるラインが<br />
             ブルーにハイライトされます<br />
             （複数のキーワードを半角空白で繋いでいる場合は無効です）
@@ -115,7 +115,7 @@ let noteArea = Vue.component('note-area', {
   methods: {
     // 画面初期表示処理
     async init() {
-      //
+      // 
     },
     getThisDataId(event) {
       let parentEl = event.target.parentElement;
@@ -146,10 +146,20 @@ let noteArea = Vue.component('note-area', {
           };
           this.noteDetail.bodyArray = [];
           let arrayParts = noteResult.note.split('\n');
-          arrayParts.forEach(e => this.noteDetail.bodyArray.push(e));
-
+          arrayParts.forEach(e => this.noteDetail.bodyArray.push(e));          
           this.openSection.noteInto = false;
           this.openSection.noteInto = true;
+        })
+        .then(e => {
+          let lines = document.querySelectorAll(".lines");
+          lines.forEach(line =>{
+            const startRegex = /^(☆|【)/;
+            const endRegex = /(☆|】)$/;
+            if(startRegex.test(line.innerText) && endRegex.test(line.innerText)){
+              line.style.fontWeight = '700';
+              line.parentElement.style.marginTop = '1em'; 
+            }
+          });
         })
         .catch(error => alert("通信に失敗しました。"));
 
