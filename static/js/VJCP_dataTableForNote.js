@@ -114,6 +114,10 @@
           <v-btn :style="client.palette.brownFront" v-if="formMode=='create'" v-text="client.phrase.button.insert" @click="openInsertConfirm"></v-btn>
           <v-btn :style="client.palette.brownFront" v-if="formMode=='edit'" v-text="client.phrase.button.update" @click="openUpdateConfirm"></v-btn>
         </section>
+        <section align="center" style="margin-top:0.5em;">
+          <v-btn :style="client.palette.brownBack" v-if="doneDownload==false" @click="doDownload($event)">ノートをダウンロード</v-btn>
+          <v-btn :style="client.palette.brownBack" v-if="doneDownload==true" @click="dialog.confirmReload=true">リロード</v-btn>
+        </section>
       </v-card>
     </div>
 
@@ -164,6 +168,12 @@
     <dialog-frame-normal :target="dialog.completeDelete" :title="'削除完了'" :contents="client.phrase.message.complete.delete">
       <v-btn @click="doReload" :style="client.palette.brownFront" v-text="'リロード'"></v-btn>
     </dialog-frame-normal>
+
+    <!-- リロード確認ダイアログ -->
+    <dialog-frame-normal :target="dialog.confirmReload" :title="'リロード確認'" :contents="'画面の再読み込みをします。よろしいですか？'">
+      <v-btn @click="doReload" :style="client.palette.brownFront" v-text="client.phrase.button.do"></v-btn>
+      <v-btn @click="dialog.confirmReload = false" :style="client.palette.brownBack" v-text="client.phrase.button.cancel"></v-btn>
+    </dialog-frame-normal>
   </div>`,
   data: function () {
     return {
@@ -174,6 +184,7 @@
       v_flg: this.cl.validationflg,
       currentBite: 0,
       noteOverBite: false,
+      doneDownload: false,
       pubStrs: ["公開","講師にのみ公開","非公開"],
       selectItem:{
         id: "",
@@ -189,6 +200,7 @@
       dialog: {
         replaceAll: false,
         replaceComplete: false,
+        confirmReload: false,
         confirmInsert: false,
         completeInsert: false,
         confirmUpdate: false,
@@ -228,13 +240,11 @@
         which: "note",
         user_id: this.id,
       };
-
       // axiosでPHPのAPIにパラメータを送信する場合は、次のようにする
       let params = new URLSearchParams();
       Object.keys(data).forEach(function (key) {
         params.append(key, this[key]);
       }, data);
-
       // ajax通信実行
       axios
         .post('../../server/api/usersItemGetter.php', params, this.headerObject)
@@ -269,13 +279,13 @@
       this.formMode = 'create';
     },
     editItem(item) {
-
       let data = {
         search_for: 'single',
         which: 'note',
         id: item.id
       }
       this.currentBite = 0;
+      this.doneDownload = false;
 
       // axiosでPHPのAPIにパラメータを送信する場合は、次のようにする
       let params = new URLSearchParams();
@@ -502,11 +512,47 @@
         location.reload();
       }, 1000);
     },
+    doDownload(event) {
+      try {
+        // ノートのタイトルと本文の値をセット
+        let fileName = this.selectItem.title;
+        let outputText = 'タイトル： ' + fileName + '\n\n';
+        outputText += '＝ ノート本文 ＝' + '\n\n';
+        outputText += this.selectItem.note + '\n';
+
+        // 出力日時を設定
+        let now = new Date();
+        outputText += '\n出力日時： ' + this.getStringFromDate(now);
+
+        // テキストファイルのダウンロード
+        const blob = new Blob([outputText], { type: 'text/plain' });
+        const aTag = document.createElement('a');
+        aTag.href = URL.createObjectURL(blob);
+        aTag.target = '_blank';
+        aTag.download = fileName + ' （編集版）';
+        aTag.click();
+        URL.revokeObjectURL(aTag.href);
+      } catch (e) {
+        console.log(e.message);
+      }
+      this.doneDownload = true;
+    },
     reset_vFlg() {
       this.v_flg.isEmpty.title = false;
       this.v_flg.length.title = false;
       this.v_flg.isEmpty.note = false;
       this.v_flg.isNotUrl = false;
+    },
+    getStringFromDate(date) {
+      let year_str = date.getFullYear();
+      let month_str = 1 + date.getMonth(); //月だけ+1する
+      let day_str = date.getDate();
+      let hour_str = date.getHours();
+      let minute_str = date.getMinutes();
+      let dayOfWeek = date.getDay() ;	// 曜日(数値)
+      let dayOfWeekStr = ["日","月","火","水","木","金","土"][dayOfWeek] ;	// 曜日
+
+      return `${year_str}年${month_str}月${day_str}日 (${dayOfWeekStr}) ${hour_str}時${minute_str}分`;
     },
   },
  });
