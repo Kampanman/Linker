@@ -140,19 +140,16 @@ let accountSelfEdit = Vue.component('account-self', {
   },
   props: ['id', 'cl'],
   methods: {
-
     // 画面初期表示処理
     async init() {
       this.reset_vFlg();
       this.getAccountInfo();
     },
     getAccountInfo() {
-
       // axiosでPHPのAPIにパラメータを送信する場合は、次のようにする
       let params = new URLSearchParams();
       params.append('search_for', 'self');
       params.append('id', this.id);
-
       // ajax通信実行
       axios
         .post('../../server/api/searchAccountGetter.php', params, this.headerObject)
@@ -164,19 +161,19 @@ let accountSelfEdit = Vue.component('account-self', {
           this.selectItem.is_teacher = res.is_teacher;
           this.selectItem.isTeacher_str = res.isTeacher_str;
           this.selectItem.comment = res.comment;
-          this.selectItem.insert_word_1st = (res.insert_word_1st==null) ? '' : res.insert_word_1st;
-          this.selectItem.insert_word_2nd = (res.insert_word_2nd==null) ? '' : res.insert_word_2nd;
-          this.selectItem.insert_word_3rd = (res.insert_word_3rd==null) ? '' : res.insert_word_3rd;
+          this.selectItem.insert_word_1st = res.insert_word_1st == null ? '' : res.insert_word_1st;
+          this.selectItem.insert_word_2nd = res.insert_word_2nd == null ? '' : res.insert_word_2nd;
+          this.selectItem.insert_word_3rd = res.insert_word_3rd == null ? '' : res.insert_word_3rd;
         })
-        .catch(error => alert("通信に失敗しました。"));
+        .catch(error => alert('通信に失敗しました。'));
     },
     async openUpdateConfirm() {
-      if(!this.validation()){
+      if (!this.validation()) {
         this.dialog.confirmUpdate = true;
         await this.judgeAlreadies();
       }
     },
-    judgeAlreadies(){
+    judgeAlreadies() {
       if (this.changeValid.account == true && this.selectItem.name != '') {
         let data = { name: this.selectItem.name };
         let params = new URLSearchParams();
@@ -190,7 +187,7 @@ let accountSelfEdit = Vue.component('account-self', {
               this.dialog.confirmUpdate = false;
             }
           })
-          .catch(error => alert("通信に失敗しました。"));
+          .catch(error => alert('通信に失敗しました。'));
       }
       if (this.changeValid.loginID == true && this.selectItem.login_id != '') {
         let data = { login_id: this.selectItem.login_id };
@@ -205,7 +202,7 @@ let accountSelfEdit = Vue.component('account-self', {
               this.dialog.confirmUpdate = false;
             }
           })
-          .catch(error => alert("通信に失敗しました。"));
+          .catch(error => alert('通信に失敗しました。'));
       }
     },
     validation() {
@@ -218,8 +215,10 @@ let accountSelfEdit = Vue.component('account-self', {
         this.v_flg.isEmpty.account.loginID = true;
         decide = true;
       }
-      if (this.changeValid.password == true && 
-        (this.selectItem.password == '' || this.selectItem.password == '')) {
+      if (
+        this.changeValid.password == true &&
+        (this.selectItem.password == '' || this.selectItem.password == '')
+      ) {
         this.v_flg.isEmpty.account.password = true;
         decide = true;
       }
@@ -259,7 +258,7 @@ let accountSelfEdit = Vue.component('account-self', {
         comment: this.selectItem.comment,
         insert_word_1st: this.selectItem.insert_word_1st,
         insert_word_2nd: this.selectItem.insert_word_2nd,
-        insert_word_3rd: this.selectItem.insert_word_3rd
+        insert_word_3rd: this.selectItem.insert_word_3rd,
       };
       this.changeValid.password == true ? (data.type = 'self') : (data.type = 'nonpass');
       console.log('data', data);
@@ -274,7 +273,7 @@ let accountSelfEdit = Vue.component('account-self', {
           this.dialog.confirmUpdate = false;
           this.dialog.completeUpdate = true;
         })
-        .catch(error => alert("通信に失敗しました。"));
+        .catch(error => alert('通信に失敗しました。'));
     },
     doReload() {
       setTimeout(function () {
