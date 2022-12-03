@@ -36,7 +36,11 @@ let noteArea = Vue.component('note-area', {
       <card-sec-searched :prop="'noteInner'">
         <template #title><tag-title>ノートの詳細</tag-title></template>
         <template #contents>
-          <br />
+          <div :style="styles.alignItem" align="right">
+            <label><b>ガチャ動画 </b></label>
+            <v-btn v-if="gachaVideo==false" :style="client.palette.redBack" @click="openGachaVideo">非表示</v-btn>
+            <v-btn v-if="gachaVideo==true" :style="client.palette.redFront" @click="closeGachaVideo">表示</v-btn>
+          </div><br />
           <div :style="styles.widthFlex + styles.alignItem">
             <div style="margin-right:10px;margin-bottom:10px;"><label><b>登録者: </b></label><span>{{ noteDetail.author }}</span></div>
             <div style="margin-right:10px;margin-bottom:10px;">
@@ -64,6 +68,9 @@ let noteArea = Vue.component('note-area', {
             ブルーにハイライトされます<br />
             （複数のキーワードを半角空白で繋いでいる場合は無効です）
           </p><br />
+          <div align="center" class="blankNoteButton">
+            <v-btn :style="client.palette.brownFront" @click="viewBlankNoteArea($event)">虫食いノートをつくる</v-btn>
+          </div><br />
           <div :style="styles.alignItem">
             <ul>
               <li style="list-style: none;" v-for="(parts, i) of noteDetail.bodyArray">
@@ -87,9 +94,45 @@ let noteArea = Vue.component('note-area', {
                 >{{ parts }}</span>
               </li>
             </ul>
+          </div><br />
+          <div :style="styles.alignItem" align="center" v-if="gachaVideo==true" :class="blankNoteArea==true ? 'fader' : 'none'">
+            <div :style="styles.alignItem"><span style="fontWeight:700; font-size:1.5em">＝＝ ガチャ動画 ＝＝</span></div>
+            <div :style="styles.alignItem" style="width:90%" :align="widthAlign">
+              <label><b>タイトル： </b></label><span v-text="videoDetail.title"></span><br />
+              <label><b>登録タグ： </b></label><span v-text="videoDetail.tags"></span>
+            </div>
+            <div :style="styles.alignItem" style="width:90%" id="gachaV_area">
+              <iframe :width="frameSize.width" :height="frameSize.height" 
+                :src="videoDetail.url.replace('watch?v=','embed/')"
+                title="YouTube video player"
+                frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen>
+              </iframe>
+            </div>
           </div>
         </template>
       </card-sec-searched>
+    </div>
+    <div v-if="blankNoteArea" :class="blankNoteArea==true ? 'fader' : 'none'">
+      <card-sec>
+        <template #title><tag-title>虫食いノート</tag-title></template><br />
+        <template #contents>
+          <div :style="styles.alignItem"><label><b>タイトル: </b></label>
+            <span v-if="noteDetail.url==''">{{ noteDetail.title }}</span>
+            <span v-else><a :href="noteDetail.url" style="color:cornflowerblue" target="_blank">{{ noteDetail.title }}</a></span>
+          </div><br />
+          <div :style="styles.alignItem">
+            <v-app><v-textarea outlined label="虫食いノート本文" v-model="blankNoteText"></v-textarea></v-app>
+          </div>
+          <div align="center">
+            <label style="margin-right:1em;"><b>選択した部分</b></label>
+            <v-btn :style="'margin:5px;' + client.palette.brownFront" v-text="'ランダムに秘匿する'" @click="toSecretRandom()"></v-btn>
+            <v-btn :style="'margin:5px;' + client.palette.brownFront" v-text="'シンプルに秘匿する'" @click="toSecretSimple()"></v-btn>
+          </div><br />
+          <div align="center">
+            <v-btn :style="'margin:5px;' + client.palette.brownFront" v-text="'ノートをダウンロード'" @click="downloadTXT()"></v-btn>
+          </div>
+        </template>
+      </card-sec>
     </div>
   </div>`,
   data: function () {
@@ -102,10 +145,16 @@ let noteArea = Vue.component('note-area', {
       styles: this.stl,
       noteItems: this.items,
       noteDetail: '',
+      gachaVideo: false,
+      widthAlign: 'center',
+      blankNoteArea: false,
+      blankNoteText: '',
       allToggle: 1,
       toggleBadgeStyle:
         'cursor:pointer;margin-right:5px;padding-left:5px;padding-right:5px;' +
         'border-radius:5px;user-select:none;',
+      videoDetail: {},
+      frameSize: { width: 560, height: 315 },
     };
   },
   created: function () {
@@ -155,7 +204,11 @@ let noteArea = Vue.component('note-area', {
           lines.forEach(line =>{
             const startRegex = /^(☆|【)/;
             const endRegex = /(☆|】)$/;
-            if(startRegex.test(line.innerText) && endRegex.test(line.innerText)){
+            const startRoundRegex = /^●[^ _\/\\\$\%]{1,5}/;
+            if(
+              (startRegex.test(line.innerText) && endRegex.test(line.innerText))
+              || startRoundRegex.test(line.innerText)
+            ){
               line.style.fontWeight = '700';
               line.parentElement.style.marginTop = '1em'; 
             }
@@ -197,6 +250,16 @@ let noteArea = Vue.component('note-area', {
       });
       this.allToggle = 1;
     },
+    dlFunction(fileName, outputText, fileType) {
+        // ファイルのダウンロード
+        const blob = new Blob([outputText], { type: fileType });
+        const aTag = document.createElement('a');
+        aTag.href = URL.createObjectURL(blob);
+        aTag.target = '_blank';
+        aTag.download = fileName;
+        aTag.click();
+        URL.revokeObjectURL(aTag.href);      
+    },
     doDownload(event) {
       try {
         // 画面上に表示されている値をセット
@@ -210,15 +273,7 @@ let noteArea = Vue.component('note-area', {
         let lines = document.querySelectorAll('.lines');
         lines.forEach(e => (outputText += e.innerText + '\n'));
         outputText += '\n\n取得元サイト： ' + location.href;
-
-        // テキストファイルのダウンロード
-        const blob = new Blob([outputText], { type: 'text/plain' });
-        const aTag = document.createElement('a');
-        aTag.href = URL.createObjectURL(blob);
-        aTag.target = '_blank';
-        aTag.download = fileName;
-        aTag.click();
-        URL.revokeObjectURL(aTag.href);
+        this.dlFunction(fileName, outputText, 'text/plain');
         event.target.parentElement.style.display = 'none';
       } catch (e) {
         console.log(e.message);
@@ -239,20 +294,116 @@ let noteArea = Vue.component('note-area', {
           if (e.style.opacity == 1) outputText += e.innerText + '\n';
         });
         outputText += '\n\n取得元サイト： ' + location.href;
-
-        // テキストファイルのダウンロード
-        const blob = new Blob([outputText], { type: 'text/plain' });
-        const aTag = document.createElement('a');
-        aTag.href = URL.createObjectURL(blob);
-        aTag.target = '_blank';
-        aTag.download = fileName;
-        aTag.click();
-        URL.revokeObjectURL(aTag.href);
+        this.dlFunction(fileName, outputText, 'text/plain');
         event.target.parentElement.style.display = 'none';
       } catch (e) {
         console.log(e.message);
       }
     },
+    viewBlankNoteArea(event) {
+      this.openSection.noteInto = false;
+      this.blankNoteArea = true;
+      this.blankNoteText = '';
+      this.blankNoteText = this.noteDetail.bodyArray.join('\n');
+    },
+    setSelection() {
+      let textarea = document.querySelector('textarea');
+      let pos_start = textarea.selectionStart;
+      let pos_end = textarea.selectionEnd;
+      let val = textarea.value;
+      let selectionObject = {
+        textarea: textarea,
+        range: val.slice(pos_start, pos_end),
+        beforeNode: val.slice(0, pos_start),
+        afterNode: val.slice(pos_end)
+      };
+
+      return selectionObject;
+    },
+    toSecretRandom() {
+      let textarea = this.setSelection().textarea;
+      let range = this.setSelection().range;
+      let beforeNode = this.setSelection().beforeNode;
+      let afterNode = this.setSelection().afterNode;
+      const phraseArray = ["【＿見せられません＿】","【＿秘匿事項です＿】","【＿勘弁して下さい＿】","【＿ゴバァッ！＿】","【＿ぐぶっッ！＿】"];
+      let insertNode = phraseArray[Math.floor(Math.random() * phraseArray.length)];
+      if(range.length > 0) textarea.value = beforeNode + insertNode + afterNode;
+      this.blankNoteText = textarea.value;
+    },
+    toSecretSimple() {
+      let textarea = this.setSelection().textarea;
+      let range = this.setSelection().range;
+      let insertUnder = "";
+      for(let i=0; i<range.length; i++){
+        insertUnder += "_" 
+      }
+      let beforeNode = this.setSelection().beforeNode;
+      let afterNode = this.setSelection().afterNode;
+      if(range.length > 0) textarea.value = beforeNode + "【" + insertUnder  + "】" + afterNode;
+      this.blankNoteText = textarea.value;
+    },
+    downloadTXT() {
+      try {
+        // 画面上に表示されている値をセット
+        let fileName = this.noteDetail.title;
+        let outputText = 'タイトル： ' + fileName + '\n\n';
+        outputText += '＝ ノート本文 ＝' + '\n\n';
+        outputText += this.blankNoteText + '\n\n';
+
+        // 出力日時を設定
+        let now = new Date();
+        outputText += '出力日時： ' + this.getStringFromDate(now) + '\n';
+        outputText += '取得元サイト： ' + location.href;
+        this.dlFunction(fileName, outputText, 'text/plain');
+      } catch (e) {
+        console.log(e.message);
+      }
+    },
+    getStringFromDate(date) {
+      let year_str = date.getFullYear();
+      let month_str = 1 + date.getMonth(); //月だけ+1する
+      let day_str = date.getDate();
+      let hour_str = date.getHours();
+      let minute_str = date.getMinutes();
+      let dayOfWeek = date.getDay() ;	// 曜日(数値)
+      let dayOfWeekStr = ["日","月","火","水","木","金","土"][dayOfWeek] ;	// 曜日
+
+      return `${year_str}年${month_str}月${day_str}日 (${dayOfWeekStr}) ${hour_str}時${minute_str}分`;
+    },
+    openGachaVideo() {
+      let data = { search_for: 'gachavideo' };
+      let params = new URLSearchParams();
+      Object.keys(data).forEach(function (key) {
+        params.append(key, this[key]);
+      }, data);
+
+      // ajax通信実行
+      axios
+        .post('../../server/api/gachaVideoGetter.php', params, this.headerObject)
+        .then(response => {
+          this.videoDetail.title = response.data.result.video[0].title;
+          this.videoDetail.tags = response.data.result.video[0].tags;
+          this.videoDetail.url = response.data.result.video[0].url;
+        })
+        .then(response => {
+          try {
+            if(window.innerWidth<=400){
+              this.styles.widthFlex = "display:block;justify-content: space-between;";
+              this.frameSize.width = window.innerWidth - 80;
+              this.widthAlign = 'left';
+            }else{
+              this.widthAlign = 'center';
+            }
+            this.frameSize.height = this.frameSize.width * 9 / 16;
+            this.gachaVideo = true;
+          } catch (e) {
+            alert("通信に失敗しました。");
+          }
+        })
+    },
+    closeGachaVideo() {
+      this.gachaVideo = false;
+    }
   },
 });
 
