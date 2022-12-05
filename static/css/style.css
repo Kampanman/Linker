@@ -78,9 +78,7 @@ a:active, a:focus{outline:0;}
 /*************
 /* ロゴ
 *************/
-#header .logo{
-	padding:20px 0 0;
-}
+#header .logo{ padding:20px 0 0; }
 
 .logo a{
 	font-size:20px;
@@ -93,32 +91,6 @@ a:active, a:focus{outline:0;}
 	font-size:12px;
 	font-weight:normal;
 }
-
-/**************************
-/* グリッド
-**************************/
-.gridWrapper{
-	padding-bottom:20px;
-	overflow: hidden;
-}
-
-* html .gridWrapper{height:1%;}
-	
-.grid{
-	float:left;
-	border-radius:5px;
-	background:#fff;
-}
-
-.grid h3{
-	padding:20px 5px;
-	text-align:center;
-	color:#fff;
-	border-radius:5px 5px 0 0;
-	background:#292d48;
-}
-
-.grid p{ padding:5px 10px; }
 
 /*************
 メイン コンテンツ
@@ -183,11 +155,6 @@ table.table td{border-left:#292d48 3px double}
 	border-bottom:1px dashed #ebebeb;
 }
 
-#sub li:last-child{
-	border:0;
-	margin-bottom:0;
-}
-
 #sub li a{display:block;}
 #sub ul.list{padding-bottom:7px;}
 
@@ -197,8 +164,6 @@ table.table td{border-left:#292d48 3px double}
 	padding:5px 0;
 	overflow:hidden;
 }
-
-* html #sub ul.list li{height:1%;}
 
 #sub ul.list li img{
 	float:left;
@@ -241,65 +206,26 @@ table.table td{border-left:#292d48 3px double}
 		padding-bottom:20px;
 	}
 	
-	.aboutHighlight, .lines {font-size: 17px;}
-
-	/* グリッド全体 */
-	.gridWrapper{
-		width:80%;
-		margin:0 0 0 -20px;
+	.aboutHighlight, .noteUl>li {
+		font-size: 17px;
+		margin-bottom: 5px;
 	}
-	
-	/* グリッド共通 ベース:トップページ4カラム */
-	.grid{
-		float:left;
-		width:220px;
-		margin-left:20px;
-	}
-	
-	#sub .grid, #footer .grid{ width:25%; }
 }
 
 /* モニター幅940px以下 */
 @media only screen and (max-width:940px){
 	#header h1{padding:0 0 5px 10px;}
 	#header .logo{padding-left:10px;}
-	
-	.grid{
-		float:left;
-		width:48%;
-		margin:10px 2% 0 0;
+
+	.aboutHighlight, .noteUl>li {
+		font-size: 16px;
+		margin-bottom: 10px;
 	}
-	
-	.grid img{
-		float:left;
-		margin-right:5px;
-	}
-	
-	#gallery{padding-left:1px;}
-	
-	#gallery .grid{
-		width:23%;
-		margin:0 2% 0 0;
-		padding:0;
-	}
-	
-	#gallery .grid img{
-		float:none;
-		margin:0;
-	}
-	
-	#sub .grid{
-		width:32%;
-		margin:10px 1%;
-	}
-	
-	#sub .grid:first-child{ margin-left:0; }	
-	#sub .grid:last-child{ margin-right:0; }
 }
 
 /* iPad 縦 */
 @media only screen and (max-width:768px){
-  #header{padding-bottom:0;}	
+  #header{padding-bottom:0;}
 	#header h1{text-align:center;}
 	
 	#header .logo{
@@ -318,15 +244,6 @@ table.table td{border-left:#292d48 3px double}
 
 /* スマートフォン 横(ランドスケープ) */
 @media only screen and (max-width:640px){
-	#footer .grid p{text-align:center;}
-	
-	.grid img{
-		float:none;
-		margin:20px auto 10px;
-	}
-	
-	.grid p,#sub .grid li{text-align:left;}
-
   .alignleft,.alignright{
 		float:none;
 		display:block;
@@ -340,13 +257,6 @@ table.table td{border-left:#292d48 3px double}
 		margin-left: 10px;
 		margin-right: 10px;
 	}
-	
-	#sub .grid{
-		float:none;
-		width:98%;
-	}
-	
-	#sub .grid h3{padding:10px 5px;}
 	
 	#sub ul.list{padding:10px;}
 	

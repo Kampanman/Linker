@@ -72,7 +72,7 @@ let noteArea = Vue.component('note-area', {
             <v-btn :style="client.palette.brownFront" @click="viewBlankNoteArea($event)">虫食いノートをつくる</v-btn>
           </div><br />
           <div :style="styles.alignItem">
-            <ul>
+            <ul class="noteUl">
               <li style="list-style: none;" v-for="(parts, i) of noteDetail.bodyArray">
                 <span v-if="parts.trim().length > 0"
                   :id="'on_'+(i+1)"
