@@ -8,6 +8,21 @@ include('../functions.php');
 
 // apiに直接アクセスした場合、画面には0とだけ表示されるように設定
 $res = 0;
+$lostIds = array();
+
+try{
+  $tables = array("linker_notes", "linker_videos");
+  foreach($tables as $table){
+    $lostIdSql = getSqlOfGetLostId("id", $table);
+    $statement = $connection->prepare($lostIdSql);
+    $statement->execute();
+    $idResult = $statement->fetchAll(PDO::FETCH_ASSOC)[0]['target_id'];
+    $lostIds[$table] = $idResult;
+  }
+}catch(Exception $e){
+  $lostIds = "";
+  $lostIds = $e->getMessage();
+}
 
 try{
   // クライアント側から取得してきたパラメータを定義
@@ -26,9 +41,10 @@ try{
     if($type=="insert"){
       // ノートレコードを新規追加
       $noteInsertSql = "INSERT INTO linker_notes "
-      ."(title, url, note, publicity, created_at, created_user_id, updated_at, updated_user_id) "
-      ."VALUES (:title, :url, :note, :publicity, now(), :created_user_id, now(), :updated_user_id)";
+      ."(id, title, url, note, publicity, created_at, created_user_id, updated_at, updated_user_id) "
+      ."VALUES (:id, :title, :url, :note, :publicity, now(), :created_user_id, now(), :updated_user_id)";
       $statement = $connection->prepare($noteInsertSql);
+      $statement->bindValue(':id', $lostIds['linker_notes']);
       $statement->bindValue(':title', $title);
       $statement->bindValue(':url', $url);
       $statement->bindValue(':note', $note);
@@ -65,9 +81,10 @@ try{
     if($type=="insert"){
       // 動画レコードを新規追加
       $videoInsertSql = "INSERT INTO linker_videos "
-      ."(title, tags, url, publicity, created_at, created_user_id, updated_at, updated_user_id) "
-      ."VALUES (:title, :tags, :url, :publicity, now(), :created_user_id, now(), :updated_user_id)";
+      ."(id, title, tags, url, publicity, created_at, created_user_id, updated_at, updated_user_id) "
+      ."VALUES (:id, :title, :tags, :url, :publicity, now(), :created_user_id, now(), :updated_user_id)";
       $statement = $connection->prepare($videoInsertSql);
+      $statement->bindValue(':id', $lostIds['linker_videos']);
       $statement->bindValue(':title', $title);
       $statement->bindValue(':tags', $tags);
       $statement->bindValue(':url', $url);
@@ -106,4 +123,12 @@ try{
   echo $res;
 }catch(Exception $e){
   echo $e->getMessage();
+}
+
+// 欠番のID値を取得するためのSQL文を生成
+function getSqlOfGetLostId($idColumn, $tableName){
+  $getIdSql = "SELECT MIN(a.`".$idColumn."`) + 1 'target_id' FROM `".$tableName."` a "
+  ."LEFT OUTER JOIN `".$tableName."` b ON a.`".$idColumn."` + 1 = b.`".$idColumn."` "
+  ."WHERE b.`".$idColumn."` IS NULL";
+  return $getIdSql;
 }
