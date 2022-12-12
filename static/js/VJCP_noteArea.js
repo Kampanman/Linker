@@ -11,7 +11,7 @@ let noteArea = Vue.component('note-area', {
           <span>該当ノートが検出されませんでした。<br />代わりにですが、こちらのノート、どうでしょう？</span><br /><br />
         </div>
         <section align="center" v-if="noteItems.length < 1" id="noteIndex">
-          <v-btn id="view_note_1" :style="styles.viewButton" data-id="1" data-which="note" @click="getThisDataId($event)">表示</v-btn>        
+          <v-btn id="view_note_1" :style="styles.viewButton" data-id="1" data-which="note" @click="getThisDataId($event)">表示</v-btn>
         </section>
         <section v-else id="noteIndex"><br />
           <p v-for="item of noteItems" style="display:inline-block;margin-bottom:10px;">
@@ -36,6 +36,11 @@ let noteArea = Vue.component('note-area', {
       <card-sec-searched :prop="'noteInner'">
         <template #title><tag-title>ノートの詳細</tag-title></template>
         <template #contents>
+
+          <div style="margin-bottom:0.5em" v-if="articlableFlg==true" align="center">
+            <br /><v-btn :style="client.palette.brownFront" @click="newTabConfirmDialog=true">Linker Article で表示</v-btn>
+          </div>
+
           <div :style="styles.alignItem" align="right">
             <label><b>ガチャ動画 </b></label>
             <v-btn v-if="gachaVideo==false" :style="client.palette.redBack" @click="openGachaVideo">非表示</v-btn>
@@ -112,6 +117,7 @@ let noteArea = Vue.component('note-area', {
         </template>
       </card-sec-searched>
     </div>
+
     <div v-if="blankNoteArea" :class="blankNoteArea==true ? 'fader' : 'none'">
       <card-sec>
         <template #title><tag-title>虫食いノート</tag-title></template><br />
@@ -129,32 +135,41 @@ let noteArea = Vue.component('note-area', {
             <v-btn :style="'margin:5px;' + client.palette.brownFront" v-text="'シンプルに秘匿する'" @click="toSecretSimple()"></v-btn>
           </div><br />
           <div align="center">
-            <v-btn :style="'margin:5px;' + client.palette.brownFront" v-text="'ノートをダウンロード'" @click="downloadTXT()"></v-btn>
+            <v-btn :style="'margin:5px;' + client.palette.brownFront" v-text="'ノートをダウンロード'" @click="mushikuiDl()"></v-btn>
           </div>
         </template>
       </card-sec>
     </div>
+
+    <!-- 記事画面表示確認モーダルダイアログ -->
+    <dialog-frame-normal :target="newTabConfirmDialog" :title="'記事画面表示確認'" :contents="'表示されているノートを記事画面で表示してもよろしいですか？'">
+      <v-btn :style="client.palette.brownFront" v-text="client.phrase.button.do" @click="sendForArticle()"></v-btn>
+      <v-btn @click="newTabConfirmDialog = false" :style="client.palette.brownBack" v-text="client.phrase.button.cancel"></v-btn>
+    </dialog-frame-normal>
+
   </div>`,
   data: function () {
     return {
       headerObject: {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       },
-      client: this.cl,
-      openSection: this.sec,
-      styles: this.stl,
-      noteItems: this.items,
-      noteDetail: '',
-      gachaVideo: false,
-      widthAlign: 'center',
+      allToggle: 1,
+      articlableFlg: false,
       blankNoteArea: false,
       blankNoteText: '',
-      allToggle: 1,
+      client: this.cl,
+      frameSize: { width: 560, height: 315 },
+      gachaVideo: false,
+      newTabConfirmDialog: false,
+      noteItems: this.items,
+      noteDetail: '',
+      openSection: this.sec,
+      styles: this.stl,
       toggleBadgeStyle:
         'cursor:pointer;margin-right:5px;padding-left:5px;padding-right:5px;' +
         'border-radius:5px;user-select:none;',
       videoDetail: {},
-      frameSize: { width: 560, height: 315 },
+      widthAlign: 'center',
     };
   },
   created: function () {
@@ -164,7 +179,10 @@ let noteArea = Vue.component('note-area', {
   methods: {
     // 画面初期表示処理
     async init() {
-      // 
+      this.judgeArticlable();
+    },
+    judgeArticlable() {
+      if (this.client.form.auth.loginID != '') this.articlableFlg = true;
     },
     getThisDataId(event) {
       let parentEl = event.target.parentElement;
@@ -195,26 +213,26 @@ let noteArea = Vue.component('note-area', {
           };
           this.noteDetail.bodyArray = [];
           let arrayParts = noteResult.note.split('\n');
-          arrayParts.forEach(e => this.noteDetail.bodyArray.push(e));          
+          arrayParts.forEach(e => this.noteDetail.bodyArray.push(e));
           this.openSection.noteInto = false;
           this.openSection.noteInto = true;
         })
         .then(e => {
-          let lines = document.querySelectorAll(".lines");
-          lines.forEach(line =>{
+          let lines = document.querySelectorAll('.lines');
+          lines.forEach(line => {
             const startRegex = /^(☆|【)/;
             const endRegex = /(☆|】)$/;
             const startRoundRegex = /^●[^ _\/\\\$\%]{1,5}/;
-            if(
-              (startRegex.test(line.innerText) && endRegex.test(line.innerText))
-              || startRoundRegex.test(line.innerText)
-            ){
+            if (
+              (startRegex.test(line.innerText) && endRegex.test(line.innerText)) ||
+              startRoundRegex.test(line.innerText)
+            ) {
               line.style.fontWeight = '700';
-              line.parentElement.style.marginTop = '1em'; 
+              line.parentElement.style.marginTop = '1em';
             }
           });
         })
-        .catch(error => alert("通信に失敗しました。"));
+        .catch(error => alert('通信に失敗しました。'));
 
       if (window.innerWidth >= 480) {
         this.styles.widthFlex = 'display:flex;justify-content: space-between;';
@@ -250,30 +268,33 @@ let noteArea = Vue.component('note-area', {
       });
       this.allToggle = 1;
     },
-    dlFunction(fileName, outputText, fileType) {
-        // ファイルのダウンロード
-        const blob = new Blob([outputText], { type: fileType });
-        const aTag = document.createElement('a');
-        aTag.href = URL.createObjectURL(blob);
-        aTag.target = '_blank';
-        aTag.download = fileName;
-        aTag.click();
-        URL.revokeObjectURL(aTag.href);      
+    dlFunction(linesClass) {
+      // 画面上に表示されている値をセット
+      let fileName = this.noteDetail.title;
+      let createdDate = document.getElementById('createdDate').innerText;
+      let updatedDate = document.getElementById('updatedDate').innerText;
+      let outputText = 'タイトル： ' + fileName + '\n\n';
+      outputText += '作成者： ' + this.noteDetail.author + '\n';
+      outputText += '初回登録日： ' + createdDate + '\n';
+      outputText += '最終更新日： ' + updatedDate + '\n\n';
+      let lines = document.querySelectorAll(linesClass);
+      lines.forEach(e => (outputText += e.innerText + '\n'));
+      outputText += '\n\n取得元サイト： ' + location.href;
+
+      // ファイルのダウンロード
+      const now = new Date();
+      const blob = new Blob([outputText], { type: 'text/plain' });
+      const aTag = document.createElement('a');
+      aTag.href = URL.createObjectURL(blob);
+      aTag.target = '_blank';
+      aTag.download = fileName + '_' + this.getSimpleDateString();
+      aTag.click();
+      URL.revokeObjectURL(aTag.href);
     },
     doDownload(event) {
       try {
-        // 画面上に表示されている値をセット
-        let fileName = this.noteDetail.title;
-        let createdDate = document.getElementById('createdDate').innerText;
-        let updatedDate = document.getElementById('updatedDate').innerText;
-        let outputText = 'タイトル： ' + fileName + '\n\n';
-        outputText += '作成者： ' + this.noteDetail.author + '\n';
-        outputText += '初回登録日： ' + createdDate + '\n';
-        outputText += '最終更新日： ' + updatedDate + '\n\n';
-        let lines = document.querySelectorAll('.lines');
-        lines.forEach(e => (outputText += e.innerText + '\n'));
-        outputText += '\n\n取得元サイト： ' + location.href;
-        this.dlFunction(fileName, outputText, 'text/plain');
+        const linesClass = '.lines';
+        this.dlFunction(linesClass);
         event.target.parentElement.style.display = 'none';
       } catch (e) {
         console.log(e.message);
@@ -281,20 +302,8 @@ let noteArea = Vue.component('note-area', {
     },
     doPartDownload(event) {
       try {
-        // 画面上に表示されている値をセット
-        let fileName = this.noteDetail.title;
-        let createdDate = document.getElementById('createdDate').innerText;
-        let updatedDate = document.getElementById('updatedDate').innerText;
-        let outputText = 'タイトル： ' + fileName + '\n\n';
-        outputText += '作成者： ' + this.noteDetail.author + '\n';
-        outputText += '初回登録日： ' + createdDate + '\n';
-        outputText += '最終更新日： ' + updatedDate + '\n\n';
-        let lines = document.querySelectorAll('.visible');
-        lines.forEach(e => {
-          if (e.style.opacity == 1) outputText += e.innerText + '\n';
-        });
-        outputText += '\n\n取得元サイト： ' + location.href;
-        this.dlFunction(fileName, outputText, 'text/plain');
+        const linesClass = '.visible';
+        this.dlFunction(linesClass);
         event.target.parentElement.style.display = 'none';
       } catch (e) {
         console.log(e.message);
@@ -304,7 +313,11 @@ let noteArea = Vue.component('note-area', {
       this.openSection.noteInto = false;
       this.blankNoteArea = true;
       this.blankNoteText = '';
-      this.blankNoteText = this.noteDetail.bodyArray.join('\n');
+      let linesArray = [];
+      document.querySelectorAll('.visible').forEach((item)=>{
+        linesArray.push(item.innerText);
+      });
+      this.blankNoteText = linesArray.join('\n');
     },
     setSelection() {
       let textarea = document.querySelector('textarea');
@@ -315,7 +328,7 @@ let noteArea = Vue.component('note-area', {
         textarea: textarea,
         range: val.slice(pos_start, pos_end),
         beforeNode: val.slice(0, pos_start),
-        afterNode: val.slice(pos_end)
+        afterNode: val.slice(pos_end),
       };
 
       return selectionObject;
@@ -325,24 +338,22 @@ let noteArea = Vue.component('note-area', {
       let range = this.setSelection().range;
       let beforeNode = this.setSelection().beforeNode;
       let afterNode = this.setSelection().afterNode;
-      const phraseArray = ["【＿見せられません＿】","【＿秘匿事項です＿】","【＿勘弁して下さい＿】","【＿ゴバァッ！＿】","【＿ぐぶっッ！＿】"];
+      const phraseArray = ['【＿見せられません＿】','【＿秘匿事項です＿】','【＿勘弁して下さい＿】','【＿ゴバァッ！＿】','【＿ぐぶっッ！＿】'];
       let insertNode = phraseArray[Math.floor(Math.random() * phraseArray.length)];
-      if(range.length > 0) textarea.value = beforeNode + insertNode + afterNode;
+      if (range.length > 0) textarea.value = beforeNode + insertNode + afterNode;
       this.blankNoteText = textarea.value;
     },
     toSecretSimple() {
       let textarea = this.setSelection().textarea;
       let range = this.setSelection().range;
-      let insertUnder = "";
-      for(let i=0; i<range.length; i++){
-        insertUnder += "_" 
-      }
+      let insertUnder = '';
+      for (let i = 0; i < range.length; i++) insertUnder += '_';
       let beforeNode = this.setSelection().beforeNode;
       let afterNode = this.setSelection().afterNode;
-      if(range.length > 0) textarea.value = beforeNode + "【" + insertUnder  + "】" + afterNode;
+      if (range.length > 0) textarea.value = beforeNode + '【' + insertUnder + '】' + afterNode;
       this.blankNoteText = textarea.value;
     },
-    downloadTXT() {
+    mushikuiDl() {
       try {
         // 画面上に表示されている値をセット
         let fileName = this.noteDetail.title;
@@ -351,24 +362,49 @@ let noteArea = Vue.component('note-area', {
         outputText += this.blankNoteText + '\n\n';
 
         // 出力日時を設定
-        let now = new Date();
-        outputText += '出力日時： ' + this.getStringFromDate(now) + '\n';
+        outputText += '出力日時： ' + this.getJapDateString() + '\n';
         outputText += '取得元サイト： ' + location.href;
-        this.dlFunction(fileName, outputText, 'text/plain');
+        
+        // ファイルのダウンロード
+        const blob = new Blob([outputText], { type: 'text/plain' });
+        const aTag = document.createElement('a');
+        aTag.href = URL.createObjectURL(blob);
+        aTag.target = '_blank';
+        aTag.download = fileName + '_' + this.getSimpleDateString();
+        aTag.click();
+        URL.revokeObjectURL(aTag.href);
       } catch (e) {
         console.log(e.message);
       }
     },
-    getStringFromDate(date) {
-      let year_str = date.getFullYear();
-      let month_str = 1 + date.getMonth(); //月だけ+1する
-      let day_str = date.getDate();
-      let hour_str = date.getHours();
-      let minute_str = date.getMinutes();
-      let dayOfWeek = date.getDay() ;	// 曜日(数値)
-      let dayOfWeekStr = ["日","月","火","水","木","金","土"][dayOfWeek] ;	// 曜日
-
-      return `${year_str}年${month_str}月${day_str}日 (${dayOfWeekStr}) ${hour_str}時${minute_str}分`;
+    getSimpleDateString() {
+      const pr = this.setNowDate();
+      const untilDay = `${pr.year_str}${pr.month_strWithZero}${pr.day_strWithZero}`;
+      const afterDay = `${pr.hour_strWithZero}${pr.minute_strWithZero}${pr.second_strWithZero}`;
+      return `${untilDay}_${afterDay}`;
+    },
+    getJapDateString() {
+      const pr = this.setNowDate();
+      return `${pr.year_str}年${pr.month_str}月${pr.day_str}日 (${pr.dayOfWeekStr}) ${pr.hour_str}時${pr.minute_str}分`;
+    },
+    setNowDate() {
+      const date = new Date();
+      const setMonth = 1 + date.getMonth();
+      const dayOfWeek = date.getDay(); // 曜日(数値)
+      const dateParam = {
+        year_str: date.getFullYear(),
+        month_str: setMonth, //月だけ+1する
+        month_strWithZero: setMonth.toString().padStart(2,'0'),
+        day_str: date.getDate(),
+        day_strWithZero: date.getDate().toString().padStart(2,'0'),
+        hour_str: date.getHours(),
+        hour_strWithZero: date.getHours().toString().padStart(2,'0'),
+        minute_str: date.getMinutes(),
+        minute_strWithZero: date.getMinutes().toString().padStart(2,'0'),
+        second_strWithZero: date.getSeconds().toString().padStart(2,'0'),
+        dayOfWeekStr: ['日', '月', '火', '水', '木', '金', '土'][dayOfWeek] // 曜日
+      };
+      return dateParam;
     },
     openGachaVideo() {
       let data = { search_for: 'gachavideo' };
@@ -387,22 +423,50 @@ let noteArea = Vue.component('note-area', {
         })
         .then(response => {
           try {
-            if(window.innerWidth<=400){
-              this.styles.widthFlex = "display:block;justify-content: space-between;";
+            if (window.innerWidth <= 400) {
+              this.styles.widthFlex = 'display:block;justify-content: space-between;';
               this.frameSize.width = window.innerWidth - 80;
               this.widthAlign = 'left';
-            }else{
+            } else {
               this.widthAlign = 'center';
             }
-            this.frameSize.height = this.frameSize.width * 9 / 16;
+            this.frameSize.height = (this.frameSize.width * 9) / 16;
             this.gachaVideo = true;
           } catch (e) {
-            alert("通信に失敗しました。");
+            alert('通信に失敗しました。');
           }
-        })
+        });
     },
     closeGachaVideo() {
       this.gachaVideo = false;
+    },
+    sendForArticle() {
+      // 架空のformを生成
+      var form = document.createElement('form');
+      form.action = './currentArticle.php';
+      form.method = 'POST';
+      form.target = '_blank';
+      // 一時的にbodyに追加
+      document.body.append(form);
+      // formdta イベントに関数を登録(submit する直前に発火)
+      form.addEventListener('formdata', (e) => {
+        var fd = e.formData;
+        let linesArray = [];
+        document.querySelectorAll('.visible').forEach((item)=>{
+          linesArray.push(item.innerText);
+        });
+        
+        fd.set('title', this.noteDetail.title);
+        fd.set('text_array', linesArray.join('<br>'));
+        fd.set('time', this.getJapDateString());
+      });
+
+      // submit
+      form.submit();
+      // formを画面から除去
+      form.remove();
+      // 確認モーダルを閉じる
+      this.newTabConfirmDialog = false;
     }
   },
 });
