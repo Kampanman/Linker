@@ -32,7 +32,7 @@
         </template>
         <template v-slot:item.editAndDelete="{ item }">
           <v-icon small class="mr-2" @click="editItem(item)">mdi-pencil</v-icon>
-          <v-icon small @click="deleteItem(item)">mdi-delete</v-icon>
+          <v-icon small v-if="item.id!=1" @click="deleteItem(item)">mdi-delete</v-icon>
         </template>
       </v-data-table>
     </v-card><br />
@@ -68,7 +68,7 @@
           <v-text-field label="動画タグ" placeholder="タグを入力してください" v-model="selectItem.tags"></v-text-field>
           <div style="margin:5px;width:180px;">
             <v-app>
-              <v-select label="公開設定" :items="pubStrs" v-model="selectItem.pub_str"></v-select>
+              <v-select label="公開設定" :items="pubStrs" v-if="selectItem.id!=1" v-model="selectItem.pub_str"></v-select>
             </v-app>
           </div><br />
         </section>
