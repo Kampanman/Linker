@@ -129,7 +129,7 @@ try{
         // 検索条件に合致するノートレコードを取得
         $noteSql = "SELECT notes.id, notes.title, notes.url, acc.is_teacher, 0 as last FROM `linker_notes` notes "
         ."JOIN `linker_accounts` acc on notes.created_user_id = acc.id "
-        .$noteWhere."AND notes.".$title_or_body_string." LIKE ".$note_wordCondition."ORDER BY notes.updated_at DESC LIMIT ".$view_count;
+        .$noteWhere."AND (notes.".$title_or_body_string." LIKE ".$note_wordCondition.") ORDER BY notes.updated_at DESC LIMIT ".$view_count;
         $statement = $connection->prepare($noteSql);
         $statement->execute();
         $noteResult = $statement->fetchAll(PDO::FETCH_ASSOC);
@@ -139,7 +139,7 @@ try{
         // 検索条件に合致する動画レコードを取得
         $videoSql = "SELECT videos.id, videos.title, videos.tags, videos.url, acc.is_teacher, 0 as last FROM `linker_videos` videos "
         ."JOIN `linker_accounts` acc on videos.created_user_id = acc.id "
-        .$videoWhere."AND videos.".$videoWhich_string." LIKE ".$video_wordCondition."ORDER BY videos.updated_at DESC LIMIT ".$view_count;
+        .$videoWhere."AND (videos.".$videoWhich_string." LIKE ".$video_wordCondition.") ORDER BY videos.updated_at DESC LIMIT ".$view_count;
         $statement = $connection->prepare($videoSql);
         $statement->execute();
         $videoResult = $statement->fetchAll(PDO::FETCH_ASSOC);
