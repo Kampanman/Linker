@@ -207,7 +207,7 @@ let csvNoteArea = Vue.component('csv-note-area', {
               const link_style = "color:cornflowerblue;text-decoration-line:none;font-size:125%;";
               new_line = new_line
                 .replaceAll(/link?_\(/g, "<a target='_blank' style='"+ link_style +"' href=")
-                .replaceAll(/\)/g, '>【*】</a>');
+                .replaceAll(/\"\)/g, '">【*】</a>');
             }
             re_bodyArray.push(new_line);
             spare_bodyArray.push(spare_line);
