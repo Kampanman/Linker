@@ -41,7 +41,7 @@ if(isset($account_id) && isset($is_teacher)){
 
         if($judge==true){
           $re_count++;
-          if($line['id']==$account_id){
+          if($line['created_user_id']==$account_id){
             $regene_array[] = $line;
           }else{
             if($line['publicity']=="0"){
