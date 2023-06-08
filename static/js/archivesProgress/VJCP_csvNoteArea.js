@@ -19,7 +19,7 @@ let csvNoteArea = Vue.component('csv-note-area', {
             </span>
             <v-btn
               :id="'view_note_'+item.id"
-              :style="styles.viewButton"
+              :style="item.id.indexOf('lin')>-1 ? styles.viewButton_lin : styles.viewButton"
               :data-id="item.id"
               :data-publicity="item.publicity"
               data-which="note"
