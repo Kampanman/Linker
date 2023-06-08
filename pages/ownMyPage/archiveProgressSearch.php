@@ -254,6 +254,16 @@
                 min-height:'';
                 height:20px;
               `,
+              viewButton_lin: `border: 2px solid purple;
+                border-radius: 15px;
+                background: rgb(155, 35, 90);
+                padding: 5px;color: white;
+                font-weight: 600;
+                font-size: 12px;
+                margin-left:5px;
+                min-height:'';
+                height:20px;
+              `,
               widthFlex: 'display:flex;justify-content: space-between;',
               alignItem: 'margin:10px 5px;align-items:center;',
               flexAlign: 'display:flex;align-items:center;',
