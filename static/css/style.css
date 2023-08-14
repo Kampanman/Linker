@@ -12,7 +12,6 @@ blockquote:before, blockquote:after,q:before, q:after {content: "";}
 blockquote, q {quotes: "" "";}
 a img{border: 0;}
 footer, header, menu, nav, section {display: block;}
-/* -------------------------------------------------------------- */
 
 body{
 	color:#333;
@@ -22,8 +21,6 @@ body{
 	-webkit-text-size-adjust: none;
 }
 
-/* リンク設定
-------------------------------------------------------------*/
 a{color:#3f4360;text-decoration:none;}
 a:hover{color:#292d48;}
 a:active, a:focus{outline:0;}
@@ -43,8 +40,6 @@ a:active, a:focus{outline:0;}
 	text-shadow: 0 0 10px #fdff80;
 }
 
-/* 全体
-------------------------------------------------------------*/
 #wrapper{
 	margin:0 auto;
 	position:relative;
@@ -74,7 +69,6 @@ a:active, a:focus{outline:0;}
 	color:#fff;
 }
 
-
 /*************
 /* ロゴ
 *************/
@@ -95,7 +89,6 @@ a:active, a:focus{outline:0;}
 /*************
 メイン コンテンツ
 *************/
-
 .fader{
 	animation-name:fadeInAnime;
 	animation-duration:1s;
@@ -257,13 +250,10 @@ table.table td{border-left:#292d48 3px double}
 		margin-left: 10px;
 		margin-right: 10px;
 	}
-	
 	#sub ul.list{padding:10px;}
-	
 	#sub ul.list li{
 		padding-bottom:3px;
 		margin-bottom:3px;
 	}
-	
 	#sub ul.list li img{margin:0 5px 0 0;}
 }
