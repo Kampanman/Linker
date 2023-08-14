@@ -23,7 +23,7 @@
       body {
         background: #e8d3c7;
         color: #4c4c4c;
-        font-size: 17px;
+        font: 17px verdana,"yu gothic","YuGothic","hiragino kaku gothic pron","メイリオ","Meiryo","sans-serif";
         line-height: 2em;
       }
       #vueForArchive > div { padding: 5px; }
@@ -36,8 +36,8 @@
         margin:0 auto;
         justify-content: space-between;
         align-items: center;
-      }      
-      .logo{ 
+      }
+      .logo{
         padding:20px 0 0;
         text-align:center;
       }
@@ -79,6 +79,7 @@
       .dialog > div > .v-application--wrap {
         display: none;
       }
+      article.areaContents { font-size: 16px }
 
       @keyframes fadeInAnime{
         from {opacity: 0}
@@ -216,7 +217,7 @@
             accountInfo: {
               login_id: document.forms.user_info.login_id.value,
               account_id: document.forms.user_info.account_id.value,
-              is_teacher: document.forms.user_info.is_teacher.value,              
+              is_teacher: document.forms.user_info.is_teacher.value,
             },
             csv_selected: false,
             filename: "",
@@ -247,16 +248,6 @@
               viewButton: `border: 2px solid gray;
                 border-radius: 15px;
                 background: rgb(170, 170, 170);
-                padding: 5px;color: white;
-                font-weight: 600;
-                font-size: 12px;
-                margin-left:5px;
-                min-height:'';
-                height:20px;
-              `,
-              viewButton_lin: `border: 2px solid purple;
-                border-radius: 15px;
-                background: rgb(155, 35, 90);
                 padding: 5px;color: white;
                 font-weight: 600;
                 font-size: 12px;
@@ -410,6 +401,5 @@
         }
       });
     </script>
-
 </body>
 </html>
