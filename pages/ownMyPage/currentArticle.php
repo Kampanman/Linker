@@ -24,7 +24,7 @@
     body {
       background: #e8d3c7;
       color: #4c4c4c;
-      font-size: 17px;
+      font: 17px verdana,"yu gothic","YuGothic","hiragino kaku gothic pron","メイリオ","Meiryo","sans-serif";
       line-height: 2em;
     }
 
