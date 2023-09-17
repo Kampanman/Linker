@@ -27,7 +27,7 @@ let csvSearchFormInner = Vue.component('csv-search-inner', {
         </div>
 			</section>
 			<section :style="styles.flex_center_m5px">
-        <label><b>ノートの検索対象 </b></label>
+        <label><b>検索対象 </b></label>
         <v-btn v-if="which=='title'" color="primary" dark @click="which='noteOrTags'" :style="color_palette.greenFront + styles.m5px">タイトル内</v-btn>
         <v-btn v-else color="primary" dark @click="which='title'" :style="color_palette.greenBack + styles.m5px">本文中・タグ</v-btn>
 			</section>
