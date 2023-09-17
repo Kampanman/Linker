@@ -35,8 +35,7 @@ let csvNoteArea = Vue.component('csv-note-area', {
         <template #title><tag-title>ノートの詳細</tag-title></template>
         <template #contents>
           <div :style="styles.widthFlex + styles.alignItem">
-            <div style="margin-right:10px;margin-bottom:10px;">
-              <br />
+            <div style="margin-right:10px;margin-bottom:10px;"><br />
               <v-btn v-if="allToggle==1" :style="colorPalette.brownFront" @click="doDownload($event)">ノートをダウンロード</v-btn>
               <v-btn v-if="allToggle==0" :style="colorPalette.brownFront" @click="doPartDownload($event)">ノートをダウンロード（部分出力）</v-btn>
             </div>
@@ -64,16 +63,21 @@ let csvNoteArea = Vue.component('csv-note-area', {
           </p><br />
           <div align="center" class="blankNoteButton">
             <v-btn :style="colorPalette.brownFront" @click="viewBlankNoteArea($event)">虫食いノートをつくる</v-btn>
+          </div>
+          <div align="right" style="margin: 10px 5px; align-items: center;">
+            <label><b>ON時出力 </b></label>
+            <v-btn v-if="viewTypeToggle==0" :style="colorPalette.greenBack" @click="viewTypeToggle=1">全文</v-btn>
+            <v-btn v-if="viewTypeToggle==1" :style="colorPalette.greenFront" @click="viewTypeToggle=0">一文字ずつ</v-btn>
           </div><br />
           <div :style="styles.alignItem">
             <ul class="noteUl">
               <li style="list-style: none;" v-for="(parts, i) of noteDetail.bodyArray">
-                <span v-if="parts.trim().length > 0"
+                <span v-if="parts.trim().length > 0 && rowButtonHidden==false"
                   :id="'on_'+(i+1)"
                   :data-id="(i+1)"
                   :style="colorPalette.blueFront + toggleBadgeStyle"
                   @click="forOn($event)"> ON </span>
-                <span v-if="parts.trim().length > 0"
+                <span v-if="parts.trim().length > 0 && rowButtonHidden==false"
                   :id="'off_'+(i+1)"
                   :data-id="(i+1)"
                   :style="colorPalette.blueBack + toggleBadgeStyle"
@@ -132,6 +136,8 @@ let csvNoteArea = Vue.component('csv-note-area', {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       },
       allToggle: 1,
+      viewTypeToggle: 0,
+      rowButtonHidden: false,
       articlableFlg: false,
       blankNoteArea: false,
       blankNoteText: '',
@@ -276,9 +282,30 @@ let csvNoteArea = Vue.component('csv-note-area', {
       this.allToggle = 0;
     },
     forOn(event) {
-      let targetId = event.target.dataset.id;
-      document.getElementById('line_' + targetId).style.opacity = 1;
-      document.getElementById('line_' + targetId).classList.add('visible');
+      let targetRow = document.getElementById('line_' + event.target.dataset.id);
+      let rowTextArray = [];
+      if (this.viewTypeToggle == 1) {
+        rowTextArray = targetRow.innerText.split("");
+        targetRow.innerText = "";
+      }
+      targetRow.style.opacity = 1;
+      targetRow.classList.add('visible');
+      let index = 0;
+      if (this.viewTypeToggle == 1) {
+        this.rowButtonHidden = true;
+        let addFunction = setInterval(() => { 
+          /**
+           * setInterval使うと変数の参照先が変化するとかどうとかで、function(){ ~ }のままでは使えないらしい。
+           * その為、function(){ ~ }ではなくてアロー関数を使う必要がある。
+           */
+          targetRow.innerText += rowTextArray[index];
+          index++;
+          if (index == rowTextArray.length) {
+            clearInterval(addFunction);
+            this.rowButtonHidden = false;
+          }
+        }, 80);
+      }
       this.allToggle = 1;
     },
     allOff() {
@@ -383,11 +410,9 @@ let csvNoteArea = Vue.component('csv-note-area', {
         let outputText = 'タイトル： ' + fileName + '\n\n';
         outputText += '＝ ノート本文 ＝' + '\n\n';
         outputText += this.blankNoteText + '\n\n';
-
         // 出力日時を設定
         outputText += '出力日時： ' + this.getJapDateString() + '\n';
         outputText += '取得元サイト： ' + location.href;
-
         // ファイルのダウンロード
         const blob = new Blob([outputText], { type: 'text/plain' });
         const aTag = document.createElement('a');
