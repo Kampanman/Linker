@@ -1,7 +1,6 @@
 /**
  * コンポーネント：登録CSV用ノート一覧・ノート本文エリア
  */
-
 let csvNoteArea = Vue.component('csv-note-area', {
   template: `<div>
     <card-sec-searched :prop="'note'">
@@ -236,7 +235,6 @@ let csvNoteArea = Vue.component('csv-note-area', {
           this.linesSetStile(lines, mode);
         })
         .catch(error => alert('通信に失敗しました。'));
-
       if (window.innerWidth >= 480) {
         this.styles.widthFlex = 'display:flex;justify-content: space-between;';
       } else {
@@ -272,6 +270,8 @@ let csvNoteArea = Vue.component('csv-note-area', {
         ) {
           line.style.color = '#0082ff';
           line.style.fontWeight = '600';
+        } else {
+          line.style.fontWeight = '500';
         }
       });
     },

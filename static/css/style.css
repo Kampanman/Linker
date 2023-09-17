@@ -6,11 +6,9 @@ Based on work by Eric Meyer: http://meyerweb.com/eric/tools/css/reset/index.html
 html, body, div, span, applet, object, iframe, h1, h2, h3, h4, h5, h6, p, blockquote, pre, a, abbr, acronym, address, big, cite, code, del, dfn, em, font, ins, kbd, q, s, samp, small, strike, strong, sub, sup, tt, var, dl, dt, dd, ol, ul, li, fieldset, form, label, legend, table, caption, tbody, tfoot, thead, tr, th, td {border: 0;font-family: inherit;font-size: 100%;font-style: inherit;font-weight: inherit;margin: 0;outline: 0;padding: 0;vertical-align: baseline;}
 
 ol, ul {list-style: none;}
-table {border-collapse: separate;border-spacing: 0;}
-caption, th, td {font-weight: normal;text-align: left;}
-blockquote:before, blockquote:after,q:before, q:after {content: "";}
-blockquote, q {quotes: "" "";}
+
 a img{border: 0;}
+
 footer, header, menu, nav, section {display: block;}
 
 body{
@@ -22,7 +20,9 @@ body{
 }
 
 a{color:#3f4360;text-decoration:none;}
+
 a:hover{color:#292d48;}
+
 a:active, a:focus{outline:0;}
 
 .headerIcon>.material-icons {
@@ -112,63 +112,6 @@ a:active, a:focus{outline:0;}
 }
 
 /*************
-テーブル
-*************/
-table.table{
-	border-collapse:collapse;
-	width:100%;
-	margin:10px auto;
-}
-
-table.table th,table.table td{
-	padding:5px;
-	border:1px solid #292d48;
-}
-
-table.table th{
-	text-align:right;
-	font-weight:bold;
-	letter-spacing:1px;
-	white-space:nowrap;
-	color:#fff;
-	background:#3f4360;
-	border-left:#292d48 5px solid
-}
-
-table.table td{border-left:#292d48 3px double}
-
-/*************
-サブコンテンツ
-*************/
-#sub ul{padding:10px;}
-
-#sub li{
-	margin-bottom:10px;
-	padding-bottom:10px;
-	border-bottom:1px dashed #ebebeb;
-}
-
-#sub li a{display:block;}
-#sub ul.list{padding-bottom:7px;}
-
-#sub ul.list li{
-	clear:both;
-	margin-bottom:5px;
-	padding:5px 0;
-	overflow:hidden;
-}
-
-#sub ul.list li img{
-	float:left;
-	margin-right:10px;
-}
-
-#sub ul.list li{
-	font-size:12px;
-	line-height:1.35;
-}
-
-/*************
 /* フッター
 *************/
 #footer{
@@ -184,7 +127,9 @@ table.table td{border-left:#292d48 3px double}
 }
 
 #footer a{color:#fff;}
+
 #footer a:hover{color:#ccc;}
+
 #footer .copyright{font-size:11px;}
 
 /* PC用 */
@@ -208,6 +153,7 @@ table.table td{border-left:#292d48 3px double}
 /* モニター幅940px以下 */
 @media only screen and (max-width:940px){
 	#header h1{padding:0 0 5px 10px;}
+
 	#header .logo{padding-left:10px;}
 
 	.aboutHighlight, .noteUl>li {
@@ -219,6 +165,7 @@ table.table td{border-left:#292d48 3px double}
 /* iPad 縦 */
 @media only screen and (max-width:768px){
   #header{padding-bottom:0;}
+
 	#header h1{text-align:center;}
 	
 	#header .logo{
@@ -250,10 +197,13 @@ table.table td{border-left:#292d48 3px double}
 		margin-left: 10px;
 		margin-right: 10px;
 	}
+
 	#sub ul.list{padding:10px;}
+
 	#sub ul.list li{
 		padding-bottom:3px;
 		margin-bottom:3px;
 	}
+
 	#sub ul.list li img{margin:0 5px 0 0;}
 }
