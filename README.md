@@ -67,7 +67,7 @@ https://secure.sakura.ad.jp/rs/cp/
 
 # 環境と使用言語｜Requirement and Language
 - フロントフレームワーク：Vue.js 2.x, Vuetify 2.x, JQuery 3.3.1
-- サーバー言語：PHP 7.4.30
+- サーバー言語：PHP 8.3.2
 - サーバー：Apache/2.4.54（さくらレンタルサーバー）
 - データベース：MySQL 5.7（さくらレンタルサーバー）
 
