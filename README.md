@@ -62,6 +62,8 @@ https://secure.sakura.ad.jp/rs/cp/
   - 複数のキーワードを入力してOR検索を実行した場合に、非公開のノートも表示されてしまう問題を修正  
 - バージョン5.5（β版）GitHub公開開始：2023/04/30  
   - 過去に登録してきたノート・動画のアーカイブや、発展型ノートを閲覧できる「Linker Archives & Progresses」ページ機能を追加  
+- バージョン6.0（β版）GitHub公開開始：2023/09/17  
+  - 登録した動画の削除を実行しても削除されない問題を修正  
 
 # 環境と使用言語｜Requirement and Language
 - フロントフレームワーク：Vue.js 2.x, Vuetify 2.x, JQuery 3.3.1
