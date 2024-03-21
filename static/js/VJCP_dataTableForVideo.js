@@ -386,7 +386,7 @@
         .then(response => {
           this.dialog.confirmDelete = false;
           this.dialog.completeDelete = true;
-        }).catch(error => alert("通信に失敗しました。"));      
+        }).catch(error => alert("通信に失敗しました。"));
     },
     doReload() {
       setTimeout(function(){
