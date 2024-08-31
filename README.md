@@ -25,7 +25,12 @@ https://secure.sakura.ad.jp/rs/cp/
 ## DBコネクション設定｜Database Connection
 /Linker/server/db.phpにアクセスし、$dsn,$dbname,$username,$passwordのそれぞれを、お使いのデータベースに合わせて編集してください。
 ## SQL読み込み｜SQL Reading
-お使いのMySQLで、/Linker/sqlに格納されている3種類のsqlファイルをインポートしてください。
+お使いのMySQLで、/Linker/sqlに格納されている次のsqlファイルをインポートしてください。
+- linker_accounts.sql
+- linker_accounts_settingInsertWords.sql
+- linker_notes.sql
+- linker_videos_for_csv.sql
+- linker_videos_settingTags.sql
 
 # 基本操作方法｜Basic Usage
 ## キーワード・ノート検索｜Keyword & Note Searching
@@ -39,7 +44,7 @@ https://secure.sakura.ad.jp/rs/cp/
 - 個別マイページでは、ユーザーのみが閲覧できる非公開のレコードも含めたノート・動画の検索と、ノート・動画・アカウントの編集が可能です。
 - 講師権限を持つユーザの場合は、アカウントタブで、他のアカウントの情報を編集することができます。
 
-# 最近の更新｜Recent updates
+# 旧来の更新内容｜Updates History
 - 基本機能搭載完了：2022/10/14 (日本の鉄道開業150周年記念日)
 - バージョン1.0（β版）GitHub公開開始：2022/10/20
 - バージョン2.0（β版）GitHub公開開始：2022/11/03  
