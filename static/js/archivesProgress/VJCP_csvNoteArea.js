@@ -33,6 +33,9 @@ let csvNoteArea = Vue.component('csv-note-area', {
       <card-sec-searched>
         <template #title><tag-title>ノートの詳細</tag-title></template>
         <template #contents>
+          <div style="margin-bottom:0.5em" align="center">
+            <br /><v-btn :style="colorPalette.brownFront" @click="newTabConfirmDialog=true">Linker Article で表示</v-btn>
+          </div>
           <div :style="styles.widthFlex + styles.alignItem">
             <div style="margin-right:10px;margin-bottom:10px;"><br />
               <v-btn v-if="allToggle==1" :style="colorPalette.brownFront" @click="doDownload($event)">ノートをダウンロード</v-btn>
@@ -128,6 +131,12 @@ let csvNoteArea = Vue.component('csv-note-area', {
       </card-sec>
     </div>
 
+    <!-- 記事画面表示確認モーダルダイアログ（Archives & Progressesにも追加） -->
+    <dialog-frame-normal :target="newTabConfirmDialog" :title="'記事画面表示確認'" :contents="'表示されているノートを記事画面で表示してもよろしいですか？'">
+      <v-btn :style="colorPalette.brownFront" @click="sendForArticle()">実行</v-btn>
+      <v-btn @click="newTabConfirmDialog = false" :style="colorPalette.brownBack">キャンセル</v-btn>
+    </dialog-frame-normal>
+
   </div>`,
   data: function () {
     return {
@@ -157,15 +166,8 @@ let csvNoteArea = Vue.component('csv-note-area', {
       styles: this.stl,
     };
   },
-  created: function () {
-    this.init();
-  },
   props: ['stl', 'session', 'palette', 'items', 'searched'],
   methods: {
-    // 画面初期表示処理
-    async init() {
-      //
-    },
     getThisNoteId(event, mode) {
       this.returnDefaultThis();
       let parentEl = event.target.parentElement;
@@ -454,6 +456,34 @@ let csvNoteArea = Vue.component('csv-note-area', {
       };
       return dateParam;
     },
+    sendForArticle() {
+      // 架空のformを生成
+      var form = document.createElement('form');
+      form.action = './currentArticle.php';
+      form.method = 'POST';
+      form.target = '_blank';
+      // 一時的にbodyに追加
+      document.body.append(form);
+      // formdta イベントに関数を登録(submit する直前に発火)
+      form.addEventListener('formdata', (e) => {
+        var fd = e.formData;
+        let linesArray = [];
+        document.querySelectorAll('.visible').forEach((item)=>{
+          linesArray.push(item.innerText);
+        });
+        
+        fd.set('title', this.noteDetail.title);
+        fd.set('text_array', linesArray.join('<br>'));
+        fd.set('time', this.getJapDateString());
+      });
+
+      // submit
+      form.submit();
+      // formを画面から除去
+      form.remove();
+      // 確認モーダルを閉じる
+      this.newTabConfirmDialog = false;
+    }
   },
 });
 
