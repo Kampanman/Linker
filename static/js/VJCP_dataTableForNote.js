@@ -1,6 +1,11 @@
 /**
  * コンポーネント：ノート用データテーブル
  */
+import {
+  useConvertPublicity,
+  useGetRandSecretPhrase,
+  useSetSelection
+} from './commonMethods/globalFunctions.js';
 
  let dataTableForNote = Vue.component('table-note', {
   template: `<div style="padding:1em">
@@ -330,16 +335,8 @@
       this.surrounder("☆","☆");
     },
     setSelection() {
-      let textarea = document.querySelector('textarea');
-      let pos_start = textarea.selectionStart;
-      let pos_end = textarea.selectionEnd;
-      let val = textarea.value;
-      let selectionObject = {
-        textarea: textarea,
-        range: val.slice(pos_start, pos_end),
-        beforeNode: val.slice(0, pos_start),
-        afterNode: val.slice(pos_end)
-      };
+      const textarea = document.querySelector('textarea');
+      const selectionObject = useSetSelection(textarea);
       return selectionObject;
     },
     toHalfWidth() {
@@ -353,15 +350,12 @@
       if(range.length > 0) textarea.value = beforeNode + range + afterNode;
       this.selectItem.note = textarea.value;
     },
+    getRandSecretPhrase(selection) {
+      return useGetRandSecretPhrase(selection);
+    },
     toSecret() {
-      let textarea = this.setSelection().textarea;
-      let range = this.setSelection().range;
-      let beforeNode = this.setSelection().beforeNode;
-      let afterNode = this.setSelection().afterNode;
-      const phraseArray = ["【＿見せられません＿】","【＿秘匿事項です＿】","【＿勘弁して下さい＿】","【＿ゴバァッ！＿】","【＿ぐぶっッ！＿】"];
-      let insertNode = phraseArray[Math.floor(Math.random() * phraseArray.length)];
-      if(range.length > 0) textarea.value = beforeNode + insertNode + afterNode;
-      this.selectItem.note = textarea.value;
+      const selection = this.setSelection();
+      this.selectItem.note = this.getRandSecretPhrase(selection);
     },
     surrounder(startStr, endStr) {
       let textarea = this.setSelection().textarea;
@@ -417,7 +411,7 @@
       };
       if(this.biteCount(this.selectItem.note) > 65000){
         this.noteOverBite = true;
-        decision = true;        
+        decision = true;
       }
       if(this.selectItem.url!=""){
         const pattern = /^https?:\/\/[\w/:%#\$&\?\(\)~\.=\+\-]+$/;
@@ -482,11 +476,7 @@
         }).catch(error => alert("通信に失敗しました。"));
     },
     convertPublicity(pub_str) {
-      let publicity = 1;
-      if(pub_str=="非公開") publicity = 0;
-      if(pub_str=="講師にのみ公開") publicity = 2;
-
-      return publicity;
+      return useConvertPublicity(pub_str);
     },
     doDelete() {
       let data = {
@@ -505,7 +495,7 @@
         .then(response => {
           this.dialog.confirmDelete = false;
           this.dialog.completeDelete = true;
-        }).catch(error => alert("通信に失敗しました。"));      
+        }).catch(error => alert("通信に失敗しました。"));
     },
     doReload() {
       setTimeout(function(){

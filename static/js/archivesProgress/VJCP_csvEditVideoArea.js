@@ -1,6 +1,10 @@
 /**
  * コンポーネント：リンク付動画編集エリア
  */
+import {
+  useGeneratedChars, useGeneratedQuatNums,
+  useGetSimpleDateString, useSetNowDate
+} from '../commonMethods/globalFunctions.js';
 
 let csvEditNoteArea = Vue.component('csv-editvideo-area', {
   template: `<div>
@@ -76,24 +80,10 @@ let csvEditNoteArea = Vue.component('csv-editvideo-area', {
       this.madeId = this.generatedChars() + this.generatedQuatNums();
     },
     generatedChars() {
-      let chars = '';
-      const base = ['a','i','u','e','o','b','c','d','f','g','h','k','l','m','n','p','r','s','t','y','z'];
-      const bo_in = ['a','i','u','e','o'];
-      for (let i = 0; i < 3; i++) {
-        let base_rand = Math.floor(Math.random() * base.length);
-        let boIn_rand = Math.floor(Math.random() * 5);
-        chars += base[base_rand];
-        chars += bo_in[boIn_rand];
-      }
-      return chars;
+      return useGeneratedChars();
     },
     generatedQuatNums() {
-      let nums = '';
-      for (let i = 0; i < 4; i++) {
-        let rand_num = String(Math.floor(Math.random() * 10));
-        nums += rand_num;
-      }
-      return nums;
+      return useGeneratedQuatNums();
     },
     dlFunction() {
       // 画面上に表示されている値をセット
@@ -125,29 +115,11 @@ let csvEditNoteArea = Vue.component('csv-editvideo-area', {
       }
     },
     getSimpleDateString() {
-      const pr = this.setNowDate();
-      const untilDay = `${pr.year_str}${pr.month_strWithZero}${pr.day_strWithZero}`;
-      const afterDay = `${pr.hour_strWithZero}${pr.minute_strWithZero}${pr.second_strWithZero}`;
-      return `${untilDay}_${afterDay}`;
+      const dateObject = this.getNowDate();
+      return useGetSimpleDateString(dateObject);
     },
-    setNowDate() {
-      const date = new Date();
-      const setMonth = 1 + date.getMonth();
-      const dayOfWeek = date.getDay(); // 曜日(数値)
-      const dateParam = {
-        year_str: date.getFullYear(),
-        month_str: setMonth, //月だけ+1する
-        month_strWithZero: setMonth.toString().padStart(2, '0'),
-        day_str: date.getDate(),
-        day_strWithZero: date.getDate().toString().padStart(2, '0'),
-        hour_str: date.getHours(),
-        hour_strWithZero: date.getHours().toString().padStart(2, '0'),
-        minute_str: date.getMinutes(),
-        minute_strWithZero: date.getMinutes().toString().padStart(2, '0'),
-        second_strWithZero: date.getSeconds().toString().padStart(2, '0'),
-        dayOfWeekStr: ['日', '月', '火', '水', '木', '金', '土'][dayOfWeek], // 曜日
-      };
-      return dateParam;
+    getNowDate() {
+      return useSetNowDate();
     },
   },
 });

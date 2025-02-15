@@ -1,6 +1,11 @@
 /**
  * コンポーネント：ノート一覧・ノート本文エリア
  */
+import {
+  useChangeForAll, useGetJapDateString, useGetRandSecretPhrase, useGetSecretPhrase,
+  useGetSimpleDateString, useSetNowDate,
+  useSetSelection, useSplitTextByPunctuatedParts
+} from './commonMethods/globalFunctions.js';
 
 let noteArea = Vue.component('note-area', {
   template: `<div>
@@ -11,7 +16,13 @@ let noteArea = Vue.component('note-area', {
           <span>該当ノートが検出されませんでした。<br />代わりにですが、こちらのノート、どうでしょう？</span><br /><br />
         </div>
         <section align="center" v-if="noteItems.length < 1" id="noteIndex">
-          <v-btn id="view_note_1" :style="styles.viewButton" data-id="1" data-which="note" @click="getThisDataId($event)">表示</v-btn>
+          <v-btn
+            v-if="!noAppearingNotes"
+            id="view_note_1"
+            :style="styles.viewButton"
+            data-id="1"
+            data-which="note"
+            @click="getThisDataId($event)">表示</v-btn>
         </section>
         <section v-else id="noteIndex"><br />
           <p v-for="item of noteItems" style="display:inline-block;margin-bottom:10px;">
@@ -21,6 +32,7 @@ let noteArea = Vue.component('note-area', {
               <a :href="item.url" style="color:cornflowerblue" target="_blank">{{ item.title }}</a>
             </span>
             <v-btn
+              v-if="!noAppearingNotes"
               :id="'view_note_'+item.id"
               :style="styles.viewButton"
               :data-id="item.id"
@@ -47,8 +59,8 @@ let noteArea = Vue.component('note-area', {
           <div :style="styles.widthFlex + styles.alignItem">
             <div style="margin-right:10px;margin-bottom:10px;"><label><b>登録者: </b></label><span>{{ noteDetail.author }}</span></div>
             <div style="margin-right:10px;margin-bottom:10px;">
-              <v-btn v-if="allToggle==1" :style="client.palette.brownFront" @click="doDownload($event)">ノートをダウンロード</v-btn>
-              <v-btn v-if="allToggle==0" :style="client.palette.brownFront" @click="doPartDownload($event)">ノートをダウンロード（部分出力）</v-btn>
+              <v-btn v-if="allToggle==1" :style="client.palette.brownFront" @click="doDownload($event,'normal')">ノートをダウンロード</v-btn>
+              <v-btn v-if="allToggle==0" :style="client.palette.brownFront" @click="doDownload($event,'part')">ノートをダウンロード（部分出力）</v-btn>
             </div>
             <div style="margin-bottom:10px;">
               <label><b>表示一括切替 </b></label>
@@ -76,8 +88,10 @@ let noteArea = Vue.component('note-area', {
           </div>
           <div align="right" style="margin: 10px 5px; align-items: center;">
             <label><b>ON時出力 </b></label>
-            <v-btn v-if="viewTypeToggle==0" :style="client.palette.greenBack" @click="viewTypeToggle=1">全文</v-btn>
-            <v-btn v-if="viewTypeToggle==1" :style="client.palette.greenFront" @click="viewTypeToggle=0">一文字ずつ</v-btn>
+            <v-btn v-if="viewTypeToggle==0" :style="client.palette.greenBack" @click="noAppearingConfirmDialog = true">全文</v-btn>
+            <v-btn v-if="noAppearingNotes && viewTypeToggle==1" :style="client.palette.yellowFront" @click="viewTypeToggle=2">一文字ずつ（普通）</v-btn>
+            <v-btn v-if="noAppearingNotes && viewTypeToggle==2" :style="client.palette.orangeFront" @click="viewTypeToggle=3">一文字ずつ（速い）</v-btn>
+            <v-btn v-if="noAppearingNotes && viewTypeToggle==3" :style="client.palette.redFront" @click="viewTypeToggle=1">文節ごとに</v-btn>
           </div><br />
           <div :style="styles.alignItem">
             <ul class="noteUl">
@@ -102,7 +116,8 @@ let noteArea = Vue.component('note-area', {
                 >{{ parts }}</span>
               </li>
             </ul>
-          </div><br />
+          </div>
+          <br />
           <div :style="styles.alignItem" align="center" v-if="gachaVideo==true" :class="blankNoteArea==true ? 'fader' : 'none'">
             <div :style="styles.alignItem"><span style="fontWeight:700; font-size:1.5em">＝＝ ガチャ動画 ＝＝</span></div>
             <div :style="styles.alignItem" style="width:90%" :align="widthAlign">
@@ -150,6 +165,12 @@ let noteArea = Vue.component('note-area', {
       <v-btn @click="newTabConfirmDialog = false" :style="client.palette.brownBack" v-text="client.phrase.button.cancel"></v-btn>
     </dialog-frame-normal>
 
+    <!-- ノート表示不可確認モーダルダイアログ -->
+    <dialog-frame-normal :target="noAppearingConfirmDialog" :title="'ノート選択不能化確認'" :contents="'現在選択されているノートから表示を切り替えられなくなります。よろしいですか？（再検索することで解除されます）'">
+      <v-btn :style="client.palette.brownFront" v-text="client.phrase.button.do" @click="changeFornoAppearingNotes()"></v-btn>
+      <v-btn @click="noAppearingConfirmDialog = false" :style="client.palette.brownBack" v-text="client.phrase.button.cancel"></v-btn>
+    </dialog-frame-normal>
+
   </div>`,
   data: function () {
     return {
@@ -158,6 +179,7 @@ let noteArea = Vue.component('note-area', {
       },
       allToggle: 1,
       viewTypeToggle: 0,
+      noAppearingNotes: false,
       rowButtonHidden: false,
       articlableFlg: false,
       blankNoteArea: false,
@@ -166,6 +188,7 @@ let noteArea = Vue.component('note-area', {
       frameSize: { width: 560, height: 315 },
       gachaVideo: false,
       newTabConfirmDialog: false,
+      noAppearingConfirmDialog: false,
       noteItems: this.items,
       noteDetail: '',
       openSection: this.sec,
@@ -223,8 +246,16 @@ let noteArea = Vue.component('note-area', {
           this.openSection.noteInto = true;
         })
         .then(e => {
+          // ノートの詳細エリアの各種切替ボタンで使われるフラグを初期化する
+          this.gachaVideo = false;
+          this.allToggle = 1;
+          this.viewTypeToggle = 0;
+
           let lines = document.querySelectorAll('.lines');
           lines.forEach(line => {
+            line.style.opacity = 1;
+            line.classList.add('visible');
+            
             const startRegex = /^(☆|【)/;
             const endRegex = /(☆|】)$/;
             const startRoundRegex = /^●[^ _\/\\\$\%]{1,5}/;
@@ -249,50 +280,81 @@ let noteArea = Vue.component('note-area', {
       let targetId = event.target.dataset.id;
       document.getElementById('line_' + targetId).style.opacity = 0;
       document.getElementById('line_' + targetId).classList.remove('visible');
+      document.getElementById('line_' + targetId).classList.add('invisible');
       this.allToggle = 0;
     },
     forOn(event) {
       let targetRow = document.getElementById('line_' + event.target.dataset.id);
       let rowTextArray = [];
-      if (this.viewTypeToggle == 1) {
-        rowTextArray = targetRow.innerText.split("");
+
+      if (this.viewTypeToggle > 0) {
+        rowTextArray = (this.viewTypeToggle == 3) ?
+          this.splitTextArray(targetRow.innerText) : targetRow.innerText.split("");
         targetRow.innerText = "";
       }
       targetRow.style.opacity = 1;
+      targetRow.classList.remove('invisible');
       targetRow.classList.add('visible');
       let index = 0;
-      if (this.viewTypeToggle == 1) {
+      if (this.viewTypeToggle > 0) {
         this.rowButtonHidden = true;
-        let addFunction = setInterval(() => { 
-          /**
-           * setInterval使うと変数の参照先が変化するとかどうとかで、function(){ ~ }のままでは使えないらしい。
-           * その為、function(){ ~ }ではなくてアロー関数を使う必要がある。
-           */
-          targetRow.innerText += rowTextArray[index];
-          index++;
-          if (index == rowTextArray.length) {
-            clearInterval(addFunction);
-            this.rowButtonHidden = false;
-          }
-        }, 80);
+        if (this.viewTypeToggle == 1) {
+          this.typeTextInterval(targetRow, index, rowTextArray, 0.08);
+        } else if (this.viewTypeToggle == 2) {
+          this.typeTextInterval(targetRow, index, rowTextArray, 0.02);
+        } else {
+          this.typeTextInterval(targetRow, index, rowTextArray, 0.4);
+        }
       }
-      this.allToggle = 1;
+      const invisibles = Array.from(document.querySelectorAll('.invisible'));
+      if(invisibles.length==0) this.allToggle = 1;
+    },
+    typeTextInterval(targetRow, index, rowTextArray, sec) {
+      // 元のフォントカラーと太さを保存し、violet色に変更
+      let originalColor = targetRow.style.color;
+      targetRow.style.color = 'violet';
+      let originalWeight = targetRow.style.fontWeight;
+      targetRow.style.fontWeight = 600;
+      
+      /**
+       * setInterval使うと変数の参照先が変化するとかどうとかで、function(){ ~ }のままでは使えないらしい。
+       * その為、function(){ ~ }ではなくてアロー関数を使う必要がある。
+       */
+      let addFunction = setInterval(() => { 
+        targetRow.innerText += rowTextArray[index];
+        index++;
+        if (index == rowTextArray.length) {
+          clearInterval(addFunction);
+          setTimeout(() => {
+            // 非表示にしていたボタンを再表示する
+            this.rowButtonHidden = false;
+  
+            // 保存していたフォントカラーと太さに戻す
+            targetRow.style.color = originalColor;
+            targetRow.style.fontWeight = originalWeight;
+          }, 1000);
+        }
+      }, sec * 1000);
+
+      return addFunction;
+    },
+    changeForAll(num) {
+      const target = document.querySelectorAll('.lines');
+      return useChangeForAll(target, num);
     },
     allOff() {
-      let lines = document.querySelectorAll('.lines');
-      lines.forEach(e => {
-        e.style.opacity = 0;
-        e.classList.remove('visible');
-      });
-      this.allToggle = 0;
+      this.allToggle = this.changeForAll(0);
     },
     allOn() {
-      let lines = document.querySelectorAll('.lines');
-      lines.forEach(e => {
-        e.style.opacity = 1;
-        e.classList.add('visible');
-      });
-      this.allToggle = 1;
+      this.allToggle = this.changeForAll(1);
+    },
+    splitTextArray(text) {
+      return useSplitTextByPunctuatedParts(text);
+    },
+    changeFornoAppearingNotes() {
+      this.noAppearingNotes = true;
+      this.viewTypeToggle = 1;
+      this.noAppearingConfirmDialog = false;
     },
     dlFunction(linesClass) {
       // 画面上に表示されている値をセット
@@ -317,18 +379,9 @@ let noteArea = Vue.component('note-area', {
       aTag.click();
       URL.revokeObjectURL(aTag.href);
     },
-    doDownload(event) {
+    doDownload(event, type) {
       try {
-        const linesClass = '.lines';
-        this.dlFunction(linesClass);
-        event.target.parentElement.style.display = 'none';
-      } catch (e) {
-        console.log(e.message);
-      }
-    },
-    doPartDownload(event) {
-      try {
-        const linesClass = '.visible';
+        const linesClass = (type=='part') ? '.visible' : '.lines';
         this.dlFunction(linesClass);
         event.target.parentElement.style.display = 'none';
       } catch (e) {
@@ -340,44 +393,27 @@ let noteArea = Vue.component('note-area', {
       this.blankNoteArea = true;
       this.blankNoteText = '';
       let linesArray = [];
-      document.querySelectorAll('.visible').forEach((item)=>{
-        linesArray.push(item.innerText);
-      });
+      document.querySelectorAll('.visible').forEach((item) => linesArray.push(item.innerText) );
       this.blankNoteText = linesArray.join('\n');
     },
     setSelection() {
-      let textarea = document.querySelector('textarea');
-      let pos_start = textarea.selectionStart;
-      let pos_end = textarea.selectionEnd;
-      let val = textarea.value;
-      let selectionObject = {
-        textarea: textarea,
-        range: val.slice(pos_start, pos_end),
-        beforeNode: val.slice(0, pos_start),
-        afterNode: val.slice(pos_end),
-      };
-
+      const textarea = document.querySelector('textarea');
+      const selectionObject = useSetSelection(textarea);
       return selectionObject;
     },
-    toSecretRandom() {
-      let textarea = this.setSelection().textarea;
-      let range = this.setSelection().range;
-      let beforeNode = this.setSelection().beforeNode;
-      let afterNode = this.setSelection().afterNode;
-      const phraseArray = ['【＿見せられません＿】','【＿秘匿事項です＿】','【＿勘弁して下さい＿】','【＿ゴバァッ！＿】','【＿ぐぶっッ！＿】'];
-      let insertNode = phraseArray[Math.floor(Math.random() * phraseArray.length)];
-      if (range.length > 0) textarea.value = beforeNode + insertNode + afterNode;
-      this.blankNoteText = textarea.value;
+    getSecretPhrase(selection) {
+      return useGetSecretPhrase(selection);
     },
     toSecretSimple() {
-      let textarea = this.setSelection().textarea;
-      let range = this.setSelection().range;
-      let insertUnder = '';
-      for (let i = 0; i < range.length; i++) insertUnder += '_';
-      let beforeNode = this.setSelection().beforeNode;
-      let afterNode = this.setSelection().afterNode;
-      if (range.length > 0) textarea.value = beforeNode + '【' + insertUnder + '】' + afterNode;
-      this.blankNoteText = textarea.value;
+      const selection = this.setSelection();
+      this.blankNoteText = this.getSecretPhrase(selection);
+    },
+    getRandSecretPhrase(selection) {
+      return useGetRandSecretPhrase(selection);
+    },
+    toSecretRandom() {
+      const selection = this.setSelection();
+      this.blankNoteText = this.getRandSecretPhrase(selection);
     },
     mushikuiDl() {
       try {
@@ -404,33 +440,15 @@ let noteArea = Vue.component('note-area', {
       }
     },
     getSimpleDateString() {
-      const pr = this.setNowDate();
-      const untilDay = `${pr.year_str}${pr.month_strWithZero}${pr.day_strWithZero}`;
-      const afterDay = `${pr.hour_strWithZero}${pr.minute_strWithZero}${pr.second_strWithZero}`;
-      return `${untilDay}_${afterDay}`;
+      const dateObject = this.getNowDate();
+      return useGetSimpleDateString(dateObject);
     },
     getJapDateString() {
-      const pr = this.setNowDate();
-      return `${pr.year_str}年${pr.month_str}月${pr.day_str}日 (${pr.dayOfWeekStr}) ${pr.hour_str}時${pr.minute_str}分`;
+      const dateObject = this.getNowDate();
+      return useGetJapDateString(dateObject);
     },
-    setNowDate() {
-      const date = new Date();
-      const setMonth = 1 + date.getMonth();
-      const dayOfWeek = date.getDay(); // 曜日(数値)
-      const dateParam = {
-        year_str: date.getFullYear(),
-        month_str: setMonth, //月だけ+1する
-        month_strWithZero: setMonth.toString().padStart(2,'0'),
-        day_str: date.getDate(),
-        day_strWithZero: date.getDate().toString().padStart(2,'0'),
-        hour_str: date.getHours(),
-        hour_strWithZero: date.getHours().toString().padStart(2,'0'),
-        minute_str: date.getMinutes(),
-        minute_strWithZero: date.getMinutes().toString().padStart(2,'0'),
-        second_strWithZero: date.getSeconds().toString().padStart(2,'0'),
-        dayOfWeekStr: ['日', '月', '火', '水', '木', '金', '土'][dayOfWeek] // 曜日
-      };
-      return dateParam;
+    getNowDate() {
+      return useSetNowDate();
     },
     openGachaVideo() {
       let data = { search_for: 'gachavideo' };
@@ -472,8 +490,10 @@ let noteArea = Vue.component('note-area', {
       form.action = './currentArticle.php';
       form.method = 'POST';
       form.target = '_blank';
+
       // 一時的にbodyに追加
       document.body.append(form);
+      
       // formdta イベントに関数を登録(submit する直前に発火)
       form.addEventListener('formdata', (e) => {
         var fd = e.formData;
@@ -481,7 +501,6 @@ let noteArea = Vue.component('note-area', {
         document.querySelectorAll('.visible').forEach((item)=>{
           linesArray.push(item.innerText);
         });
-        
         fd.set('title', this.noteDetail.title);
         fd.set('text_array', linesArray.join('<br>'));
         fd.set('time', this.getJapDateString());

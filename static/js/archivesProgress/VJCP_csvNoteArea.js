@@ -1,6 +1,11 @@
 /**
  * コンポーネント：登録CSV用ノート一覧・ノート本文エリア
  */
+import {
+  useChangeForAll, useGetJapDateString, useGetRandSecretPhrase, useGetSecretPhrase,
+  useGetSimpleDateString, useSetNowDate, useSetSelection, useSplitTextByPunctuatedParts
+} from '../commonMethods/globalFunctions.js';
+
 let csvNoteArea = Vue.component('csv-note-area', {
   template: `<div>
     <card-sec-searched :prop="'note'">
@@ -17,6 +22,7 @@ let csvNoteArea = Vue.component('csv-note-area', {
               <a :href="item.url" style="color:cornflowerblue" target="_blank">{{ item.title }}</a>
             </span>
             <v-btn
+              v-if="!noAppearingNotes"
               :id="'view_note_'+item.id"
               :style="item.id.indexOf('lin')>-1 ? styles.viewButton_lin : styles.viewButton"
               :data-id="item.id"
@@ -36,12 +42,24 @@ let csvNoteArea = Vue.component('csv-note-area', {
           <div style="margin-bottom:0.5em" align="center">
             <br /><v-btn :style="colorPalette.brownFront" @click="newTabConfirmDialog=true">Linker Article で表示</v-btn>
           </div>
+          <div style="margin-bottom:0.5em" align="right">
+            <label><b>出力モード </b></label>
+            <v-btn v-if="scopeMode.active==false"
+              :style="colorPalette.purpleBack"
+              @click="preActivateScopeMode()">一般出力</v-btn>
+            <v-btn v-else
+              :style="colorPalette.purpleFront"
+              @click="scopeMode.active=false">範囲出力</v-btn>
+          </div>
           <div :style="styles.widthFlex + styles.alignItem">
-            <div style="margin-right:10px;margin-bottom:10px;"><br />
-              <v-btn v-if="allToggle==1" :style="colorPalette.brownFront" @click="doDownload($event)">ノートをダウンロード</v-btn>
-              <v-btn v-if="allToggle==0" :style="colorPalette.brownFront" @click="doPartDownload($event)">ノートをダウンロード（部分出力）</v-btn>
+            <div style="margin-right:10px;margin-bottom:10px;" v-if="scopeMode.active==true"><br />
+              <v-btn :style="colorPalette.brownBack" @click="doScopeDownload($event)">ノートをダウンロード（範囲出力）</v-btn>
             </div>
-            <div style="margin-bottom:10px;">
+            <div style="margin-right:10px;margin-bottom:10px;" v-else><br />
+              <v-btn v-if="allToggle==1" :style="colorPalette.brownFront" @click="doDownload($event,'normal')">ノートをダウンロード</v-btn>
+              <v-btn v-if="allToggle==0" :style="colorPalette.brownFront" @click="doDownload($event,'part')">ノートをダウンロード（部分出力）</v-btn>
+            </div>
+            <div style="margin-bottom:10px;" v-if="scopeMode.active==false">
               <label><b>表示一括切替 </b></label>
               <v-btn v-if="allToggle==0" :style="colorPalette.blueFront" @click="allOn">ON</v-btn>
               <v-btn v-if="allToggle==1" :style="colorPalette.blueBack" @click="allOff">OFF</v-btn>
@@ -50,11 +68,11 @@ let csvNoteArea = Vue.component('csv-note-area', {
           <div :style="styles.alignItem"><label><b>タイトル: </b></label>
             <span v-if="noteDetail.url==''">{{ noteDetail.title }}</span>
             <span v-else><a :href="noteDetail.url" style="color:cornflowerblue" target="_blank">{{ noteDetail.title }}</a></span>
-            <v-btn 
-              v-if="note_progress==true" 
-              :style="'margin:5px;' + colorPalette.blueFront" 
-              :data-id="noteDetail.id" 
-              data-which="note" 
+            <v-btn
+              v-if="note_progress==true"
+              :style="'margin:5px;' + colorPalette.blueFront"
+              :data-id="noteDetail.id"
+              data-which="note"
               @click="getThisNoteId($event, 2)">リンク付ノートを表示</v-btn>
           </div>
           <div :style="styles.alignItem"><label><b>登録日: </b></label>{{ noteDetail.created_at }}</div><br />
@@ -66,24 +84,63 @@ let csvNoteArea = Vue.component('csv-note-area', {
           <div align="center" class="blankNoteButton">
             <v-btn :style="colorPalette.brownFront" @click="viewBlankNoteArea($event)">虫食いノートをつくる</v-btn>
           </div>
-          <div align="right" style="margin: 10px 5px; align-items: center;">
+          <div align="right" style="margin: 10px 5px; align-items: center;" v-if="scopeMode.active==false">
             <label><b>ON時出力 </b></label>
-            <v-btn v-if="viewTypeToggle==0" :style="colorPalette.greenBack" @click="viewTypeToggle=1">全文</v-btn>
-            <v-btn v-if="viewTypeToggle==1" :style="colorPalette.greenFront" @click="viewTypeToggle=0">一文字ずつ</v-btn>
+            <v-btn v-if="viewTypeToggle==0" :style="colorPalette.greenBack" @click="showNoAppearing()">全文</v-btn>
+            <v-btn v-if="noAppearingNotes && viewTypeToggle==1" :style="colorPalette.yellowFront" @click="viewTypeToggle=2">一文字ずつ（普通）</v-btn>
+            <v-btn v-if="noAppearingNotes && viewTypeToggle==2" :style="colorPalette.orangeFront" @click="viewTypeToggle=3">一文字ずつ（速い）</v-btn>
+            <v-btn v-if="noAppearingNotes && viewTypeToggle==3" :style="colorPalette.redFront" @click="viewTypeToggle=1">文節ごとに</v-btn>
           </div><br />
           <div :style="styles.alignItem">
             <ul class="noteUl">
               <li style="list-style: none;" v-for="(parts, i) of noteDetail.bodyArray">
-                <span v-if="parts.trim().length > 0 && rowButtonHidden==false"
+
+                <span v-if="scopeMode.active==false && parts.trim().length > 0 && rowButtonHidden==false"
                   :id="'on_'+(i+1)"
                   :data-id="(i+1)"
                   :style="colorPalette.blueFront + toggleBadgeStyle"
                   @click="forOn($event)"> ON </span>
-                <span v-if="parts.trim().length > 0 && rowButtonHidden==false"
+                <span v-if="scopeMode.active==false && parts.trim().length > 0 && rowButtonHidden==false"
                   :id="'off_'+(i+1)"
                   :data-id="(i+1)"
                   :style="colorPalette.blueBack + toggleBadgeStyle"
                   @click="forOff($event)"> OFF </span>
+                
+                <span v-if="scopeMode.active==true
+                  && scopeMode.selecting==false
+                  && scopeMode.minSelectableNum <= (i+1)
+                  && scopeMode.selectedScopes.indexOf(i+1)==-1"
+                  :id="'startscope_'+(i+1)"
+                  :data-id="(i+1)"
+                  :style="colorPalette.greenFront + toggleBadgeStyle"
+                  @click="startScope(i+1)"> 指定開始 </span>
+                <span v-if="scopeMode.active==true
+                  && scopeMode.selecting==true
+                  && scopeMode.minSelectableNum <= (i+1)
+                  && scopeMode.startNum < (i+1)
+                  && scopeMode.selectedScopes.indexOf(i+1)==-1"
+                  :id="'endscope_'+(i+1)"
+                  :data-id="(i+1)"
+                  :style="colorPalette.redFront + toggleBadgeStyle"
+                  @click="endScope(i+1)"> 範囲終了 </span>
+                <span v-if="scopeMode.active==true
+                  && scopeMode.startNum==(i+1)"
+                  :id="'selected_'+(i+1)"
+                  :style="colorPalette.yellowFront + toggleBadgeStyle"
+                  @click="endScope(i+1)"> 単体選択 </span>
+                <span v-if="scopeMode.active==true
+                  && scopeMode.selectedScopes.indexOf(i+1)==-1
+                  && (
+                    (i+1 < scopeMode.startNum && scopeMode.selecting == true)
+                    || (i+1 <= scopeMode.minSelectableNum)
+                  )"
+                  :id="'selected_'+(i+1)"
+                  :style="colorPalette.redBack + 'padding:0 0.5em;'">選択不可</span>
+                <span v-if="scopeMode.active==true && scopeMode.selectedScopes.indexOf(i+1)>-1"
+                  :id="'selected_'+(i+1)"
+                  :style="colorPalette.blueBack + 'padding:0 0.5em;'"
+                  :data-selectedparts="parts">選択済み</span>
+                
                 <span :id="'line_'+(i+1)" class="lines visible">{{ parts }}</span>
               </li>
             </ul>
@@ -137,6 +194,17 @@ let csvNoteArea = Vue.component('csv-note-area', {
       <v-btn @click="newTabConfirmDialog = false" :style="colorPalette.brownBack">キャンセル</v-btn>
     </dialog-frame-normal>
 
+    <!-- ノート表示不可確認モーダルダイアログ -->
+    <dialog-frame-normal
+      :target="noAppearingConfirmDialog"
+      :title="'ノート選択不能化確認'"
+      :contents="'現在選択されているノートから表示を切り替えられなくなります。よろしいですか？（再検索することで解除されます）'">
+      <v-btn v-if="scopeMode.active==true" :style="colorPalette.brownFront" @click="activateScopeMode()">実行</v-btn>
+      <v-btn v-if="scopeMode.active==false" :style="colorPalette.brownFront" @click="changeFornoAppearingNotes()">実行</v-btn>
+      <v-btn v-if="scopeMode.active==true" :style="colorPalette.brownBack" @click="cancelActivateScopeMode()">キャンセル</v-btn>
+      <v-btn v-if="scopeMode.active==false" :style="colorPalette.brownBack" @click="noAppearingConfirmDialog = false">キャンセル</v-btn>
+    </dialog-frame-normal>
+
   </div>`,
   data: function () {
     return {
@@ -145,12 +213,22 @@ let csvNoteArea = Vue.component('csv-note-area', {
       },
       allToggle: 1,
       viewTypeToggle: 0,
+      scopeMode: {
+        active: false,
+        selecting: false,
+        startNum: 0,
+        endNum: 0,
+        minSelectableNum: 0,
+        selectedScopes: [],
+      },
+      noAppearingNotes: false,
       rowButtonHidden: false,
       articlableFlg: false,
       blankNoteArea: false,
       blankNoteText: '',
       frameSize: { width: 560, height: 315 },
       newTabConfirmDialog: false,
+      noAppearingConfirmDialog: false,
       sessionInfo: this.session,
       noteItems: this.items,
       searched_word: this.searched,
@@ -226,6 +304,10 @@ let csvNoteArea = Vue.component('csv-note-area', {
           mode == 1 ? (this.openSection_dlnote = true) : (this.openSection_linknote = true);
         })
         .then(e => {
+          // ノートの詳細エリアの各種切替ボタンで使われるフラグを初期化する
+          this.allToggle = 1;
+          this.viewTypeToggle = 0;
+
           if (mode == 2) {
             let linkedNoteArea = document.getElementById('linkedNoteArea');
             linkedNoteArea.innerHTML = '';
@@ -245,9 +327,7 @@ let csvNoteArea = Vue.component('csv-note-area', {
     },
     returnDefaultThis() {
       // 表示前に初期化
-      this.openSection_dlnote = false;
-      this.openSection_linknote = false;
-      this.note_progress = false;
+      this.openSection_dlnote = this.openSection_linknote = this.note_progress = false;
       this.noteDetail = {};
     },
     linesSetStile(lines, mode) {
@@ -281,57 +361,130 @@ let csvNoteArea = Vue.component('csv-note-area', {
       let targetId = event.target.dataset.id;
       document.getElementById('line_' + targetId).style.opacity = 0;
       document.getElementById('line_' + targetId).classList.remove('visible');
+      document.getElementById('line_' + targetId).classList.add('invisible');
       this.allToggle = 0;
     },
     forOn(event) {
       let targetRow = document.getElementById('line_' + event.target.dataset.id);
       let rowTextArray = [];
-      if (this.viewTypeToggle == 1) {
-        rowTextArray = targetRow.innerText.split("");
+
+      if (this.viewTypeToggle > 0) {
+        rowTextArray = (this.viewTypeToggle == 3) ?
+          this.splitTextArray(targetRow.innerText) : targetRow.innerText.split("");
         targetRow.innerText = "";
       }
       targetRow.style.opacity = 1;
+      targetRow.classList.remove('invisible');
       targetRow.classList.add('visible');
       let index = 0;
-      if (this.viewTypeToggle == 1) {
+      if (this.viewTypeToggle > 0) {
         this.rowButtonHidden = true;
-        let addFunction = setInterval(() => { 
-          /**
-           * setInterval使うと変数の参照先が変化するとかどうとかで、function(){ ~ }のままでは使えないらしい。
-           * その為、function(){ ~ }ではなくてアロー関数を使う必要がある。
-           */
-          targetRow.innerText += rowTextArray[index];
-          index++;
-          if (index == rowTextArray.length) {
-            clearInterval(addFunction);
-            this.rowButtonHidden = false;
-          }
-        }, 80);
+        if (this.viewTypeToggle == 1) {
+          this.typeTextInterval(targetRow, index, rowTextArray, 0.08);
+        } else if (this.viewTypeToggle == 2) {
+          this.typeTextInterval(targetRow, index, rowTextArray, 0.02);
+        } else {
+          this.typeTextInterval(targetRow, index, rowTextArray, 0.4);
+        }
       }
-      this.allToggle = 1;
+      const invisibles = Array.from(document.querySelectorAll('.invisible'));
+      if(invisibles.length==0) this.allToggle = 1;
+    },
+    startScope(num) {
+      this.scopeMode.selecting = true;
+      this.scopeMode.startNum = num;
+    },
+    endScope(num) {
+      this.scopeMode.selecting = false;
+      this.scopeMode.endNum = num;
+      const startNum = this.scopeMode.startNum;
+      const endNumNext = this.scopeMode.endNum + 1;
+      for (let i = startNum; i < endNumNext; i++){
+        this.scopeMode.selectedScopes.push(i);
+      }
+      this.scopeMode.minSelectableNum = this.scopeMode.endNum;
+      this.scopeMode.startNum = this.scopeMode.endNum = 0;
+    },
+    activateScopeMode() {
+      this.allOn();
+      this.noAppearingNotes = true;
+      this.noAppearingConfirmDialog = false;
+    },
+    preActivateScopeMode() {
+      this.scopeMode.active = true;
+      if (!this.noAppearingNotes) {
+        this.noAppearingConfirmDialog = true;
+      } else {
+        this.activateScopeMode();
+      }
+    },
+    cancelActivateScopeMode() {
+      this.scopeMode.active = false;
+      this.noAppearingConfirmDialog = false;
+    },
+    showNoAppearing() {
+      if (!this.noAppearingNotes) {
+        this.noAppearingConfirmDialog = true;
+      } else {
+        this.changeFornoAppearingNotes();
+      }
+    },
+    typeTextInterval(targetRow, index, rowTextArray, sec) {
+      // 元のフォントカラーと太さを保存し、violet色に変更
+      let originalColor = targetRow.style.color;
+      targetRow.style.color = 'violet';
+      let originalWeight = targetRow.style.fontWeight;
+      targetRow.style.fontWeight = 600;
+      
+      /**
+       * setInterval使うと変数の参照先が変化するとかどうとかで、function(){ ~ }のままでは使えないらしい。
+       * その為、function(){ ~ }ではなくてアロー関数を使う必要がある。
+       */
+      let addFunction = setInterval(() => { 
+        targetRow.innerText += rowTextArray[index];
+        index++;
+        if (index == rowTextArray.length) {
+          clearInterval(addFunction);
+          let weitOneSec = setTimeout(() => {
+            // 非表示にしていたボタンを再表示する
+            this.rowButtonHidden = false;
+            // 保存していたフォントカラーと太さに戻す
+            targetRow.style.color = originalColor;
+            targetRow.style.fontWeight = originalWeight;
+          }, 1000);
+        }
+      }, sec * 1000);
+
+      return addFunction;
+    },
+    changeForAll(num) {
+      const target = document.querySelectorAll('.lines');
+      return useChangeForAll(target, num);
     },
     allOff() {
-      let lines = document.querySelectorAll('.lines');
-      lines.forEach(e => {
-        e.style.opacity = 0;
-        e.classList.remove('visible');
-      });
-      this.allToggle = 0;
+      this.allToggle = this.changeForAll(0);
     },
     allOn() {
-      let lines = document.querySelectorAll('.lines');
-      lines.forEach(e => {
-        e.style.opacity = 1;
-        e.classList.add('visible');
-      });
-      this.allToggle = 1;
+      this.allToggle = this.changeForAll(1);
     },
-    dlFunction(linesClass) {
+    splitTextArray(text) {
+      return useSplitTextByPunctuatedParts(text);
+    },
+    changeFornoAppearingNotes() {
+      this.noAppearingNotes = true;
+      this.viewTypeToggle = 1;
+      this.noAppearingConfirmDialog = false;
+    },
+    dlFunction(data) {
       // 画面上に表示されている値をセット
       let fileName = this.noteDetail.title;
       let outputText = 'タイトル： ' + fileName + '\n\n';
-      let lines = document.querySelectorAll(linesClass);
-      lines.forEach(e => (outputText += e.innerText + '\n'));
+      if (this.scopeMode.active) {
+        data.forEach(line => (outputText += line + '\n'));
+      } else {
+        let lines = document.querySelectorAll(data);
+        lines.forEach(e => (outputText += e.innerText + '\n'));
+      }
       outputText += '\n\n取得元サイト： ' + location.href;
       // ファイルのダウンロード
       const now = new Date();
@@ -343,27 +496,36 @@ let csvNoteArea = Vue.component('csv-note-area', {
       aTag.click();
       URL.revokeObjectURL(aTag.href);
     },
-    doDownload(event) {
+    doDownload(event, type) {
       try {
-        const linesClass = '.lines';
+        const linesClass = (type=='part') ? '.visible' : '.lines';
         this.dlFunction(linesClass);
         event.target.parentElement.style.display = 'none';
       } catch (e) {
         console.log(e.message);
       }
     },
-    doPartDownload(event) {
+    doScopeDownload(event) {
       try {
-        const linesClass = '.visible';
-        this.dlFunction(linesClass);
-        event.target.parentElement.style.display = 'none';
+        const numArray = this.scopeMode.selectedScopes;
+        if (numArray.length > 0) {
+          let textArray = [];
+          numArray.forEach((num, i) => {
+            let rowText = document.getElementById('selected_' + num).getAttribute('data-selectedparts');
+            if (i > 0) {
+              if(num - numArray[i-1] > 1) rowText = `\n${rowText}`;
+            }
+            textArray.push(rowText);
+          });
+          this.dlFunction(textArray);
+          event.target.parentElement.style.display = 'none';
+        }
       } catch (e) {
         console.log(e.message);
       }
     },
     viewBlankNoteArea(event) {
-      this.openSection_dlnote = false;
-      this.openSection_linknote = false;
+      this.openSection_dlnote = this.openSection_linknote = false;
       this.blankNoteArea = true;
       this.blankNoteText = '';
       let linesArray = [];
@@ -371,39 +533,23 @@ let csvNoteArea = Vue.component('csv-note-area', {
       this.blankNoteText = linesArray.join('\n');
     },
     setSelection() {
-      let textarea = document.querySelector('textarea');
-      let pos_start = textarea.selectionStart;
-      let pos_end = textarea.selectionEnd;
-      let val = textarea.value;
-      let selectionObject = {
-        textarea: textarea,
-        range: val.slice(pos_start, pos_end),
-        beforeNode: val.slice(0, pos_start),
-        afterNode: val.slice(pos_end),
-      };
+      const textarea = document.querySelector('textarea');
+      const selectionObject = useSetSelection(textarea);
       return selectionObject;
     },
-    toSecretRandom() {
-      let textarea = this.setSelection().textarea;
-      let range = this.setSelection().range;
-      let beforeNode = this.setSelection().beforeNode;
-      let afterNode = this.setSelection().afterNode;
-      const phraseArray = [
-        '【＿見せられません＿】','【＿秘匿事項です＿】','【＿勘弁して下さい＿】','【＿ゴバァッ！＿】','【＿ぐぶっッ！＿】'
-      ];
-      let insertNode = phraseArray[Math.floor(Math.random() * phraseArray.length)];
-      if (range.length > 0) textarea.value = beforeNode + insertNode + afterNode;
-      this.blankNoteText = textarea.value;
-    },
     toSecretSimple() {
-      let textarea = this.setSelection().textarea;
-      let range = this.setSelection().range;
-      let insertUnder = '';
-      for (let i = 0; i < range.length; i++) insertUnder += '_';
-      let beforeNode = this.setSelection().beforeNode;
-      let afterNode = this.setSelection().afterNode;
-      if (range.length > 0) textarea.value = beforeNode + '【' + insertUnder + '】' + afterNode;
-      this.blankNoteText = textarea.value;
+      const selection = this.setSelection();
+      this.blankNoteText = this.getSecretPhrase(selection);
+    },
+    getSecretPhrase(selection) {
+      return useGetSecretPhrase(selection);
+    },
+    getRandSecretPhrase(selection) {
+      return useGetRandSecretPhrase(selection);
+    },
+    toSecretRandom() {
+      const selection = this.setSelection();
+      this.blankNoteText = this.getRandSecretPhrase(selection);
     },
     mushikuiDl() {
       try {
@@ -428,33 +574,15 @@ let csvNoteArea = Vue.component('csv-note-area', {
       }
     },
     getSimpleDateString() {
-      const pr = this.setNowDate();
-      const untilDay = `${pr.year_str}${pr.month_strWithZero}${pr.day_strWithZero}`;
-      const afterDay = `${pr.hour_strWithZero}${pr.minute_strWithZero}${pr.second_strWithZero}`;
-      return `${untilDay}_${afterDay}`;
+      const dateObject = this.getNowDate();
+      return useGetSimpleDateString(dateObject);
     },
     getJapDateString() {
-      const pr = this.setNowDate();
-      return `${pr.year_str}年${pr.month_str}月${pr.day_str}日 (${pr.dayOfWeekStr}) ${pr.hour_str}時${pr.minute_str}分`;
+      const dateObject = this.getNowDate();
+      return useGetJapDateString(dateObject);
     },
-    setNowDate() {
-      const date = new Date();
-      const setMonth = 1 + date.getMonth();
-      const dayOfWeek = date.getDay(); // 曜日(数値)
-      const dateParam = {
-        year_str: date.getFullYear(),
-        month_str: setMonth, //月だけ+1する
-        month_strWithZero: setMonth.toString().padStart(2, '0'),
-        day_str: date.getDate(),
-        day_strWithZero: date.getDate().toString().padStart(2, '0'),
-        hour_str: date.getHours(),
-        hour_strWithZero: date.getHours().toString().padStart(2, '0'),
-        minute_str: date.getMinutes(),
-        minute_strWithZero: date.getMinutes().toString().padStart(2, '0'),
-        second_strWithZero: date.getSeconds().toString().padStart(2, '0'),
-        dayOfWeekStr: ['日', '月', '火', '水', '木', '金', '土'][dayOfWeek], // 曜日
-      };
-      return dateParam;
+    getNowDate() {
+      return useSetNowDate();
     },
     sendForArticle() {
       // 架空のformを生成
@@ -462,8 +590,10 @@ let csvNoteArea = Vue.component('csv-note-area', {
       form.action = './currentArticle.php';
       form.method = 'POST';
       form.target = '_blank';
+
       // 一時的にbodyに追加
       document.body.append(form);
+      
       // formdta イベントに関数を登録(submit する直前に発火)
       form.addEventListener('formdata', (e) => {
         var fd = e.formData;
