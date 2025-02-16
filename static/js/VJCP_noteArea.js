@@ -56,16 +56,31 @@ let noteArea = Vue.component('note-area', {
             <v-btn v-if="gachaVideo==false" :style="client.palette.redBack" @click="openGachaVideo">非表示</v-btn>
             <v-btn v-if="gachaVideo==true" :style="client.palette.redFront" @click="closeGachaVideo">表示</v-btn>
           </div><br />
+          <div style="margin-bottom:0.5em" align="right">
+            <label><b>出力モード </b></label>
+            <v-btn v-if="scopeMode.active==false"
+              :style="client.palette.purpleBack"
+              @click="preActivateScopeMode()">一般出力</v-btn>
+            <v-btn v-else
+              :style="client.palette.purpleFront"
+              @click="scopeMode.active=false">範囲出力</v-btn>
+          </div><br />
           <div :style="styles.widthFlex + styles.alignItem">
             <div style="margin-right:10px;margin-bottom:10px;"><label><b>登録者: </b></label><span>{{ noteDetail.author }}</span></div>
-            <div style="margin-right:10px;margin-bottom:10px;">
+            <div style="margin-right:10px;margin-bottom:10px;" v-if="scopeMode.active==true"><br />
+              <v-btn :style="client.palette.brownBack" @click="doScopeDownload($event)">ノートをダウンロード（範囲出力）</v-btn>
+            </div>
+            <div style="margin-right:10px;margin-bottom:10px;" v-if="scopeMode.active==false">
               <v-btn v-if="allToggle==1" :style="client.palette.brownFront" @click="doDownload($event,'normal')">ノートをダウンロード</v-btn>
               <v-btn v-if="allToggle==0" :style="client.palette.brownFront" @click="doDownload($event,'part')">ノートをダウンロード（部分出力）</v-btn>
             </div>
-            <div style="margin-bottom:10px;">
+            <div style="margin-bottom:10px;" v-if="scopeMode.active==false">
               <label><b>表示一括切替 </b></label>
               <v-btn v-if="allToggle==0" :style="client.palette.blueFront" @click="allOn">ON</v-btn>
               <v-btn v-if="allToggle==1" :style="client.palette.blueBack" @click="allOff">OFF</v-btn>
+            </div>
+            <div style="margin-bottom:10px;" v-if="scopeMode.active==true">
+              <label><b>範囲出力モード選択中</b></label>
             </div>
           </div>
           <div :style="styles.alignItem"><label><b>タイトル: </b></label>
@@ -86,9 +101,9 @@ let noteArea = Vue.component('note-area', {
           <div align="center" class="blankNoteButton">
             <v-btn :style="client.palette.brownFront" @click="viewBlankNoteArea($event)">虫食いノートをつくる</v-btn>
           </div>
-          <div align="right" style="margin: 10px 5px; align-items: center;">
+          <div align="right" style="margin: 10px 5px; align-items: center;" v-if="scopeMode.active==false">
             <label><b>ON時出力 </b></label>
-            <v-btn v-if="viewTypeToggle==0" :style="client.palette.greenBack" @click="noAppearingConfirmDialog = true">全文</v-btn>
+            <v-btn v-if="viewTypeToggle==0" :style="client.palette.greenBack" @click="showNoAppearing()">全文</v-btn>
             <v-btn v-if="noAppearingNotes && viewTypeToggle==1" :style="client.palette.yellowFront" @click="viewTypeToggle=2">一文字ずつ（普通）</v-btn>
             <v-btn v-if="noAppearingNotes && viewTypeToggle==2" :style="client.palette.orangeFront" @click="viewTypeToggle=3">一文字ずつ（速い）</v-btn>
             <v-btn v-if="noAppearingNotes && viewTypeToggle==3" :style="client.palette.redFront" @click="viewTypeToggle=1">文節ごとに</v-btn>
@@ -96,24 +111,60 @@ let noteArea = Vue.component('note-area', {
           <div :style="styles.alignItem">
             <ul class="noteUl">
               <li style="list-style: none;" v-for="(parts, i) of noteDetail.bodyArray">
-                <span v-if="parts.trim().length > 0 && rowButtonHidden==false"
+
+                <span v-if="scopeMode.active==false && parts.trim().length > 0 && rowButtonHidden==false"
                   :id="'on_'+(i+1)"
                   :data-id="(i+1)"
                   :style="client.palette.blueFront + toggleBadgeStyle"
                   @click="forOn($event)"> ON </span>
-                <span v-if="parts.trim().length > 0 && rowButtonHidden==false"
+                <span v-if="scopeMode.active==false && parts.trim().length > 0 && rowButtonHidden==false"
                   :id="'off_'+(i+1)"
                   :data-id="(i+1)"
                   :style="client.palette.blueBack + toggleBadgeStyle"
                   @click="forOff($event)"> OFF </span>
+
+                <span v-if="scopeMode.active==true
+                  && scopeMode.selecting==false
+                  && scopeMode.minSelectableNum <= (i+1)
+                  && scopeMode.selectedScopes.indexOf(i+1)==-1"
+                  :id="'startscope_'+(i+1)"
+                  :data-id="(i+1)"
+                  :style="client.palette.greenFront + toggleBadgeStyle"
+                  @click="startScope(i+1)"> 指定開始 </span>
+                <span v-if="scopeMode.active==true
+                  && scopeMode.selecting==true
+                  && scopeMode.minSelectableNum <= (i+1)
+                  && scopeMode.startNum < (i+1)
+                  && scopeMode.selectedScopes.indexOf(i+1)==-1"
+                  :id="'endscope_'+(i+1)"
+                  :data-id="(i+1)"
+                  :style="client.palette.redFront + toggleBadgeStyle"
+                  @click="endScope(i+1)"> 範囲終了 </span>
+                <span v-if="scopeMode.active==true
+                  && scopeMode.startNum==(i+1)"
+                  :id="'selected_'+(i+1)"
+                  :style="client.palette.yellowFront + toggleBadgeStyle"
+                  @click="endScope(i+1)"> 単体選択 </span>
+                <span v-if="scopeMode.active==true
+                  && scopeMode.selectedScopes.indexOf(i+1)==-1
+                  && (
+                    (i+1 < scopeMode.startNum && scopeMode.selecting == true)
+                    || (i+1 <= scopeMode.minSelectableNum)
+                  )"
+                  :id="'selected_'+(i+1)"
+                  :style="client.palette.redBack + 'padding:0 0.5em;'">選択不可</span>
+                <span v-if="scopeMode.active==true && scopeMode.selectedScopes.indexOf(i+1)>-1"
+                  :id="'selected_'+(i+1)"
+                  :style="client.palette.blueBack + 'padding:0 0.5em;'"
+                  :data-selectedparts="parts">選択済み</span>
+                
                 <span 
                   :id="'line_'+(i+1)" 
                   class="lines visible"
                   :style="(client.form.search.gawty != '' 
                     && client.form.search.gawty.indexOf(' ') == -1
                     && parts.indexOf(client.form.search.gawty)>-1
-                  ) ? styles.textEnhance : ''"
-                >{{ parts }}</span>
+                  ) ? styles.textEnhance : ''">{{ parts }}</span>
               </li>
             </ul>
           </div>
@@ -125,10 +176,9 @@ let noteArea = Vue.component('note-area', {
               <label><b>登録タグ： </b></label><span v-text="videoDetail.tags"></span>
             </div>
             <div :style="styles.alignItem" style="width:90%" id="gachaV_area">
-              <iframe :width="frameSize.width" :height="frameSize.height" 
-                :src="videoDetail.url.replace('watch?v=','embed/')"
-                title="YouTube video player"
-                frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen>
+              <iframe :width="frameSize.width" :height="frameSize.height"
+                :src="videoDetail.url.replace('watch?v=','embed/')" title="YouTube video player" frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen>
               </iframe>
             </div>
           </div>
@@ -166,9 +216,14 @@ let noteArea = Vue.component('note-area', {
     </dialog-frame-normal>
 
     <!-- ノート表示不可確認モーダルダイアログ -->
-    <dialog-frame-normal :target="noAppearingConfirmDialog" :title="'ノート選択不能化確認'" :contents="'現在選択されているノートから表示を切り替えられなくなります。よろしいですか？（再検索することで解除されます）'">
-      <v-btn :style="client.palette.brownFront" v-text="client.phrase.button.do" @click="changeFornoAppearingNotes()"></v-btn>
-      <v-btn @click="noAppearingConfirmDialog = false" :style="client.palette.brownBack" v-text="client.phrase.button.cancel"></v-btn>
+    <dialog-frame-normal
+      :target="noAppearingConfirmDialog"
+      :title="'ノート選択不能化確認'"
+      :contents="'現在選択されているノートから表示を切り替えられなくなります。よろしいですか？（再検索することで解除されます）'">
+      <v-btn v-if="scopeMode.active==true" :style="client.palette.brownFront" @click="activateScopeMode()">実行</v-btn>
+      <v-btn v-if="scopeMode.active==false" :style="client.palette.brownFront" @click="changeFornoAppearingNotes()">実行</v-btn>
+      <v-btn v-if="scopeMode.active==true" :style="client.palette.brownBack" @click="cancelActivateScopeMode()">キャンセル</v-btn>
+      <v-btn v-if="scopeMode.active==false" :style="client.palette.brownBack" @click="noAppearingConfirmDialog = false">キャンセル</v-btn>
     </dialog-frame-normal>
 
   </div>`,
@@ -179,6 +234,14 @@ let noteArea = Vue.component('note-area', {
       },
       allToggle: 1,
       viewTypeToggle: 0,
+      scopeMode: {
+        active: false,
+        selecting: false,
+        startNum: 0,
+        endNum: 0,
+        minSelectableNum: 0,
+        selectedScopes: [],
+      },
       noAppearingNotes: false,
       rowButtonHidden: false,
       articlableFlg: false,
@@ -309,6 +372,45 @@ let noteArea = Vue.component('note-area', {
       const invisibles = Array.from(document.querySelectorAll('.invisible'));
       if(invisibles.length==0) this.allToggle = 1;
     },
+    startScope(num) {
+      this.scopeMode.selecting = true;
+      this.scopeMode.startNum = num;
+    },
+    endScope(num) {
+      this.scopeMode.selecting = false;
+      this.scopeMode.endNum = num;
+      const startNum = this.scopeMode.startNum;
+      const endNumNext = this.scopeMode.endNum + 1;
+      for (let i = startNum; i < endNumNext; i++){
+        this.scopeMode.selectedScopes.push(i);
+      }
+      this.scopeMode.minSelectableNum = this.scopeMode.endNum;
+      this.scopeMode.startNum = this.scopeMode.endNum = 0;
+    },
+    activateScopeMode() {
+      this.allOn();
+      this.noAppearingNotes = true;
+      this.noAppearingConfirmDialog = false;
+    },
+    preActivateScopeMode() {
+      this.scopeMode.active = true;
+      if (!this.noAppearingNotes) {
+        this.noAppearingConfirmDialog = true;
+      } else {
+        this.activateScopeMode();
+      }
+    },
+    cancelActivateScopeMode() {
+      this.scopeMode.active = false;
+      this.noAppearingConfirmDialog = false;
+    },
+    showNoAppearing() {
+      if (!this.noAppearingNotes) {
+        this.noAppearingConfirmDialog = true;
+      } else {
+        this.changeFornoAppearingNotes();
+      }
+    },
     typeTextInterval(targetRow, index, rowTextArray, sec) {
       // 元のフォントカラーと太さを保存し、violet色に変更
       let originalColor = targetRow.style.color;
@@ -356,7 +458,7 @@ let noteArea = Vue.component('note-area', {
       this.viewTypeToggle = 1;
       this.noAppearingConfirmDialog = false;
     },
-    dlFunction(linesClass) {
+    dlFunction(data) {
       // 画面上に表示されている値をセット
       let fileName = this.noteDetail.title;
       let createdDate = document.getElementById('createdDate').innerText;
@@ -365,8 +467,12 @@ let noteArea = Vue.component('note-area', {
       outputText += '作成者： ' + this.noteDetail.author + '\n';
       outputText += '初回登録日： ' + createdDate + '\n';
       outputText += '最終更新日： ' + updatedDate + '\n\n';
-      let lines = document.querySelectorAll(linesClass);
-      lines.forEach(e => (outputText += e.innerText + '\n'));
+      if (this.scopeMode.active) {
+        data.forEach(line => (outputText += line + '\n'));
+      } else {
+        let lines = document.querySelectorAll(data);
+        lines.forEach(e => (outputText += e.innerText + '\n'));
+      }
       outputText += '\n\n取得元サイト： ' + location.href;
 
       // ファイルのダウンロード
@@ -384,6 +490,25 @@ let noteArea = Vue.component('note-area', {
         const linesClass = (type=='part') ? '.visible' : '.lines';
         this.dlFunction(linesClass);
         event.target.parentElement.style.display = 'none';
+      } catch (e) {
+        console.log(e.message);
+      }
+    },
+    doScopeDownload(event) {
+      try {
+        const numArray = this.scopeMode.selectedScopes;
+        if (numArray.length > 0) {
+          let textArray = [];
+          numArray.forEach((num, i) => {
+            let rowText = document.getElementById('selected_' + num).getAttribute('data-selectedparts');
+            if (i > 0) {
+              if(num - numArray[i-1] > 1) rowText = `\n${rowText}`;
+            }
+            textArray.push(rowText);
+          });
+          this.dlFunction(textArray);
+          event.target.parentElement.style.display = 'none';
+        }
       } catch (e) {
         console.log(e.message);
       }
